@@ -24,7 +24,8 @@ impl Plugin for PlayerPlugin {
         app.add_system_set(
             SystemSet::on_enter(GameState::Playing)
                 .with_system(setup_graphics.system())
-                .with_system(setup_physics.system()),
+                .with_system(setup_physics.system())
+                .with_system(background.system()),
         )
         .add_system_set(
             SystemSet::on_update(GameState::Playing)
@@ -39,7 +40,7 @@ fn setup_graphics(mut commands: Commands, mut configuration: ResMut<RapierConfig
     configuration.scale = 32.0;
 
     let mut camera = OrthographicCameraBundle::new_2d();
-    camera.transform = Transform::from_translation(Vec3::new(0.0, 200.0, 0.0));
+    camera.transform = Transform::from_translation(Vec3::new(0.0, 300.0, 0.0));
     commands.spawn_bundle(camera).insert(Camera);
 }
 
@@ -231,4 +232,19 @@ fn spawn_wheel(
         .insert(ColliderPositionSync::Discrete)
         .insert(Wheel)
         .id()
+}
+
+fn background(
+    mut commands: Commands,
+    textures: Res<TextureAssets>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+) {
+    let material = materials.add(textures.background_1.clone().into());
+    for slot in -9..10 {
+        commands.spawn_bundle(SpriteBundle {
+            material: material.clone(),
+            transform: Transform::from_translation(Vec3::new(slot as f32 * 800.0, 300.0, 0.0)),
+            ..Default::default()
+        });
+    }
 }
