@@ -1,6 +1,7 @@
 use crate::GameState;
 use bevy::prelude::*;
 use bevy_asset_loader::{AssetCollection, AssetLoader};
+use bevy_kira_audio::AudioSource;
 
 pub struct LoadingPlugin;
 
@@ -11,9 +12,18 @@ impl Plugin for LoadingPlugin {
     fn build(&self, app: &mut AppBuilder) {
         AssetLoader::new(GameState::Loading, GameState::Playing)
             .with_collection::<FontAssets>()
+            .with_collection::<AudioAssets>()
             .with_collection::<TextureAssets>()
             .build(app);
     }
+}
+
+#[derive(AssetCollection)]
+pub struct AudioAssets {
+    #[asset(path = "audio/jump_1.ogg")]
+    pub jump_1: Handle<AudioSource>,
+    #[asset(path = "audio/jump_2.ogg")]
+    pub jump_2: Handle<AudioSource>,
 }
 
 #[derive(AssetCollection)]

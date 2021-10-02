@@ -4,10 +4,12 @@ use bevy_rapier2d::prelude::*;
 pub struct GamePlugin;
 
 mod actions;
+mod audio;
 mod loading;
 mod player;
 
 use crate::actions::ActionsPlugin;
+use crate::audio::InternalAudioPlugin;
 use crate::player::PlayerPlugin;
 use loading::LoadingPlugin;
 
@@ -18,7 +20,8 @@ impl Plugin for GamePlugin {
             .add_plugin(RapierRenderPlugin)
             .add_plugin(LoadingPlugin)
             .add_plugin(ActionsPlugin)
-            .add_plugin(PlayerPlugin);
+            .add_plugin(PlayerPlugin)
+            .add_plugin(InternalAudioPlugin);
     }
 }
 

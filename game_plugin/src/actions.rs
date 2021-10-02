@@ -13,6 +13,7 @@ impl Plugin for ActionsPlugin {
 
 #[derive(Default, Debug)]
 pub struct Actions {
+    pub jump: bool,
     pub paddling: Option<f32>,
     pub head_balance: Option<f32>,
 }
@@ -69,6 +70,8 @@ fn set_movement_actions(mut actions: ResMut<Actions>, keyboard_input: Res<Input<
     } else {
         actions.head_balance = None;
     }
+
+    actions.jump = GameControl::Jump.just_pressed(&keyboard_input);
 }
 
 enum GameControl {
@@ -76,6 +79,7 @@ enum GameControl {
     BalanceBackward,
     PaddleBackward,
     PaddleForward,
+    Jump,
 }
 
 impl GameControl {
@@ -85,6 +89,7 @@ impl GameControl {
             GameControl::BalanceBackward => keyboard_input.just_released(KeyCode::Left),
             GameControl::PaddleBackward => keyboard_input.just_released(KeyCode::A),
             GameControl::PaddleForward => keyboard_input.just_released(KeyCode::D),
+            GameControl::Jump => keyboard_input.just_released(KeyCode::Space),
         }
     }
 
@@ -94,6 +99,7 @@ impl GameControl {
             GameControl::BalanceBackward => keyboard_input.pressed(KeyCode::Left),
             GameControl::PaddleBackward => keyboard_input.pressed(KeyCode::A),
             GameControl::PaddleForward => keyboard_input.pressed(KeyCode::D),
+            GameControl::Jump => keyboard_input.pressed(KeyCode::Space),
         }
     }
 
@@ -103,6 +109,7 @@ impl GameControl {
             GameControl::BalanceBackward => keyboard_input.just_pressed(KeyCode::Left),
             GameControl::PaddleBackward => keyboard_input.just_pressed(KeyCode::A),
             GameControl::PaddleForward => keyboard_input.just_pressed(KeyCode::D),
+            GameControl::Jump => keyboard_input.just_pressed(KeyCode::Space),
         }
     }
 }

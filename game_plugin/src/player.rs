@@ -1,4 +1,5 @@
 use crate::actions::Actions;
+use crate::audio::PlaySoundEffect;
 use crate::loading::TextureAssets;
 use crate::GameState;
 use bevy::prelude::*;
@@ -15,25 +16,34 @@ const PATH_HEIGTH: f32 = 1.0;
 
 pub struct Wheel;
 pub struct Head;
+pub struct Body;
 pub struct Camera;
 
 /// This plugin handles player related stuff like movement
 /// Player logic is only active during the State `GameState::Playing`
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut AppBuilder) {
-        app.add_system_set(
-            SystemSet::on_enter(GameState::Playing)
-                .with_system(setup_graphics.system())
-                .with_system(setup_physics.system())
-                .with_system(background.system()),
-        )
-        .add_system_set(
-            SystemSet::on_update(GameState::Playing)
-                .with_system(paddle_wheel.system())
-                .with_system(move_head.system())
-                .with_system(move_camera.system()),
-        );
+        app.insert_resource(WheelGrounded::NO)
+            .add_system_set(
+                SystemSet::on_enter(GameState::Playing)
+                    .with_system(setup_graphics.system())
+                    .with_system(setup_physics.system())
+                    .with_system(background.system()),
+            )
+            .add_system_set(
+                SystemSet::on_update(GameState::Playing)
+                    .with_system(paddle_wheel.system())
+                    .with_system(move_head.system())
+                    .with_system(move_camera.system())
+                    .with_system(jump.system()),
+            );
     }
+}
+
+#[derive(PartialEq, Eq)]
+enum WheelGrounded {
+    NO,
+    YES,
 }
 
 fn setup_graphics(mut commands: Commands, mut configuration: ResMut<RapierConfiguration>) {
@@ -56,7 +66,7 @@ pub fn setup_physics(
 
     let mut wheel_body_joint = BallJoint::new(
         Vec2::new(0.0, 0.0).into(),
-        Vec2::new(0.0, -0.5 * BODY_LENGTH - BODY_RADIUS - WHEEL_RADIUS).into(),
+        Vec2::new(0.0, -0.5 * BODY_LENGTH - BODY_RADIUS - WHEEL_RADIUS - 0.1).into(),
     );
     wheel_body_joint.motor_model = SpringModel::Disabled;
     commands.spawn().insert(JointBuilderComponent::new(
@@ -165,6 +175,7 @@ fn spawn_body(
             ..Default::default()
         })
         .insert(ColliderPositionSync::Discrete)
+        .insert(Body)
         .id()
 }
 
@@ -203,6 +214,45 @@ fn spawn_head(
         .id()
 }
 
+fn jump(
+    actions: Res<Actions>,
+    mut wheel_query: Query<
+        (Entity, &mut RigidBodyVelocity, &Transform),
+        (With<Wheel>, Without<Body>),
+    >,
+    mut body_query: Query<&Transform, (With<Body>, Without<Wheel>)>,
+    mut wheel_grounded: ResMut<WheelGrounded>,
+    mut sound_effects: EventWriter<PlaySoundEffect>,
+    mut contact_event: EventReader<ContactEvent>,
+) {
+    if let Ok((entity, mut wheel_velocity, wheel_transform)) = wheel_query.single_mut() {
+        for event in contact_event.iter() {
+            if let ContactEvent::Started(h1, h2) = event {
+                if h1.entity() == entity || h2.entity() == entity {
+                    info!("Grounded!");
+                    *wheel_grounded = WheelGrounded::YES;
+                } else {
+                    warn!("A second collider with contact events?");
+                }
+            }
+        }
+        if actions.jump && *wheel_grounded == WheelGrounded::YES {
+            *wheel_grounded = WheelGrounded::NO;
+            let body_transform = body_query.single_mut().unwrap();
+            let jump_direction = Vec2::new(
+                body_transform.translation.x - wheel_transform.translation.x,
+                body_transform.translation.y - wheel_transform.translation.y,
+            );
+            jump_direction.normalize();
+            sound_effects.send(PlaySoundEffect::Jump);
+            wheel_velocity.linvel.data.0[0][0] += jump_direction.x * 0.15;
+            wheel_velocity.linvel.data.0[0][1] += jump_direction.y * 0.15;
+        }
+    } else {
+        warn!("Why is there more than one player?");
+    }
+}
+
 fn spawn_wheel(
     commands: &mut Commands,
     textures: &TextureAssets,
@@ -219,6 +269,7 @@ fn spawn_wheel(
         })
         .insert_bundle(ColliderBundle {
             shape: ColliderShape::ball(WHEEL_RADIUS),
+            flags: ColliderFlags::from(ActiveEvents::CONTACT_EVENTS),
             ..Default::default()
         })
         .insert_bundle(SpriteBundle {

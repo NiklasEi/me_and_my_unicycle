@@ -12,6 +12,10 @@ fn main() {
     let mut app = App::build();
     app
         // .insert_resource(Msaa { samples: 4 })
+        .insert_resource(bevy::log::LogSettings {
+            level: bevy::log::Level::DEBUG,
+            filter: "wgpu=error,bevy_ecs=error".to_string(),
+        })
         .insert_resource(ClearColor(Color::rgb(0.4, 0.4, 0.4)))
         .insert_resource(WindowDescriptor {
             width: 800.,
