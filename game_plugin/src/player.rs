@@ -50,11 +50,11 @@ pub fn setup_physics(
         ..Default::default()
     };
     let collider = ColliderBundle {
-        shape: ColliderShape::capsule([0., -1.].into(), [0., 1.].into(), 1.),
+        shape: ColliderShape::capsule([0., -0.5].into(), [0., 0.5].into(), 0.5),
         ..Default::default()
     };
     let mut sprite_transform = Transform::default();
-    sprite_transform.scale = Vec3::new(0.25, 0.25, 0.25);
+    sprite_transform.scale = Vec3::new(0.125, 0.125, 0.125);
     let body_id = commands
         .spawn_bundle(body)
         .insert_bundle(collider)
@@ -66,46 +66,34 @@ pub fn setup_physics(
         .insert(ColliderPositionSync::Discrete)
         .id();
 
-    let num = 1;
     let rad = 1.;
 
-    let shift = rad * 2.0;
-    let centerx = shift * (num as f32) / 2.0;
-    let centery = shift / 2.0;
+    let body = RigidBodyBundle {
+        position: [0., rad].into(),
+        ..Default::default()
+    };
+    let collider = ColliderBundle {
+        shape: ColliderShape::ball(rad),
+        ..Default::default()
+    };
+    let mut sprite_transform = Transform::default();
+    sprite_transform.scale = Vec3::new(0.25, 0.25, 0.25);
+    let player_id = commands
+        .spawn_bundle(body)
+        .insert_bundle(collider)
+        .insert_bundle(SpriteBundle {
+            material: materials.add(textures.bevy.clone().into()),
+            transform: sprite_transform,
+            ..Default::default()
+        })
+        .insert(ColliderPositionSync::Discrete)
+        .insert(Player)
+        .id();
 
-    let mut player_id = Entity::new(1);
-    for i in 0..num {
-        for j in 0usize..num * 5 {
-            let x = i as f32 * shift - centerx;
-            let y = j as f32 * shift + centery + 2.0;
-
-            // Build the rigid body.
-            let body = RigidBodyBundle {
-                position: [x, y].into(),
-                ..Default::default()
-            };
-            let collider = ColliderBundle {
-                shape: ColliderShape::ball(rad),
-                ..Default::default()
-            };
-            let mut sprite_transform = Transform::default();
-            sprite_transform.scale = Vec3::new(0.25, 0.25, 0.25);
-            player_id = commands
-                .spawn_bundle(body)
-                .insert_bundle(collider)
-                .insert_bundle(SpriteBundle {
-                    material: materials.add(textures.bevy.clone().into()),
-                    transform: sprite_transform,
-                    ..Default::default()
-                })
-                .insert(ColliderPositionSync::Discrete)
-                .id();
-        }
-    }
-    commands.entity(player_id).insert(Player);
-
-    // let joint = BallJoint::new(Vec2::new(0.0, 16.0).into(), Vec2::new(0.0, -16.0).into());
-    // commands.spawn().insert(JointBuilderComponent::new(joint, player_id, body_id));
+    let joint = BallJoint::new(Vec2::new(0.0, 0.0).into(), Vec2::new(0.0, -2.05).into());
+    commands
+        .spawn()
+        .insert(JointBuilderComponent::new(joint, player_id, body_id));
 }
 
 fn move_player(
