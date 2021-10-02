@@ -24,6 +24,10 @@ pub struct AudioAssets {
     pub jump_1: Handle<AudioSource>,
     #[asset(path = "audio/jump_2.ogg")]
     pub jump_2: Handle<AudioSource>,
+    #[asset(path = "audio/land_1.ogg")]
+    pub land_1: Handle<AudioSource>,
+    #[asset(path = "audio/background.ogg")]
+    pub background: Handle<AudioSource>,
 }
 
 #[derive(AssetCollection)]

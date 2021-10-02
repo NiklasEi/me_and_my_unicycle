@@ -18,6 +18,7 @@ pub struct Wheel;
 pub struct Head;
 pub struct Body;
 pub struct Camera;
+pub struct Platform;
 
 /// This plugin handles player related stuff like movement
 /// Player logic is only active during the State `GameState::Playing`
@@ -137,7 +138,8 @@ fn spawn_ground(commands: &mut Commands) {
             ..Default::default()
         })
         .insert(ColliderDebugRender::default())
-        .insert(ColliderPositionSync::Discrete);
+        .insert(ColliderPositionSync::Discrete)
+        .insert(Platform);
 }
 
 fn spawn_body(
@@ -221,15 +223,25 @@ fn jump(
         (With<Wheel>, Without<Body>),
     >,
     mut body_query: Query<&Transform, (With<Body>, Without<Wheel>)>,
+    platform_query: Query<Entity, (With<Platform>, Without<Wheel>, Without<Body>)>,
     mut wheel_grounded: ResMut<WheelGrounded>,
     mut sound_effects: EventWriter<PlaySoundEffect>,
     mut contact_event: EventReader<ContactEvent>,
+    // narrow_phase: Res<NarrowPhase>
 ) {
-    if let Ok((entity, mut wheel_velocity, wheel_transform)) = wheel_query.single_mut() {
+    if let Ok((wheel, mut wheel_velocity, wheel_transform)) = wheel_query.single_mut() {
         for event in contact_event.iter() {
             if let ContactEvent::Started(h1, h2) = event {
-                if h1.entity() == entity || h2.entity() == entity {
+                let platforms = platform_query
+                    .iter()
+                    .map(|entity| entity.clone())
+                    .collect::<Vec<Entity>>();
+                if (h1.entity() == wheel || h2.entity() == wheel)
+                    && (platforms.iter().any(|entity| entity == &h1.entity())
+                        || platforms.iter().any(|entity| entity == &h2.entity()))
+                {
                     info!("Grounded!");
+                    sound_effects.send(PlaySoundEffect::Land);
                     *wheel_grounded = WheelGrounded::YES;
                 } else {
                     warn!("A second collider with contact events?");
