@@ -2,6 +2,7 @@ use crate::actions::Actions;
 use crate::loading::TextureAssets;
 use crate::GameState;
 use bevy::prelude::*;
+use bevy_rapier2d::na::clamp;
 use bevy_rapier2d::prelude::*;
 
 pub struct PlayerPlugin;
@@ -26,7 +27,6 @@ fn setup_graphics(mut commands: Commands, mut configuration: ResMut<RapierConfig
 
     let mut camera = OrthographicCameraBundle::new_2d();
     camera.transform = Transform::from_translation(Vec3::new(0.0, 200.0, 0.0));
-
     commands.spawn_bundle(camera);
 }
 
@@ -35,62 +35,62 @@ pub fn setup_physics(
     textures: Res<TextureAssets>,
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
-    let ground_size = 250.0;
-    let collider = ColliderBundle {
-        shape: ColliderShape::cuboid(ground_size, 1.0),
-        ..Default::default()
-    };
     commands
-        .spawn_bundle(collider)
+        .spawn_bundle(ColliderBundle {
+            shape: ColliderShape::cuboid(250.0, 1.0),
+            ..Default::default()
+        })
         .insert(ColliderDebugRender::default())
         .insert(ColliderPositionSync::Discrete);
 
-    let body = RigidBodyBundle {
-        position: [0., 5.].into(),
-        ..Default::default()
-    };
-    let collider = ColliderBundle {
-        shape: ColliderShape::capsule([0., -0.5].into(), [0., 0.5].into(), 0.5),
-        ..Default::default()
-    };
-    let mut sprite_transform = Transform::default();
-    sprite_transform.scale = Vec3::new(0.125, 0.125, 0.125);
     let body_id = commands
-        .spawn_bundle(body)
-        .insert_bundle(collider)
+        .spawn_bundle(RigidBodyBundle {
+            position: [0., 5.].into(),
+            forces: RigidBodyForces {
+                gravity_scale: 0.1,
+                ..Default::default()
+            },
+            ..Default::default()
+        })
+        .insert_bundle(ColliderBundle {
+            shape: ColliderShape::capsule([0., -0.5].into(), [0., 0.5].into(), 0.5),
+            ..Default::default()
+        })
         .insert_bundle(SpriteBundle {
             material: materials.add(textures.body.clone().into()),
-            transform: sprite_transform,
+            transform: Transform {
+                scale: Vec3::new(0.125, 0.125, 0.125),
+                ..Transform::default()
+            },
             ..Default::default()
         })
         .insert(ColliderPositionSync::Discrete)
         .id();
 
-    let rad = 1.;
-
-    let body = RigidBodyBundle {
-        position: [0., rad].into(),
-        ..Default::default()
-    };
-    let collider = ColliderBundle {
-        shape: ColliderShape::ball(rad),
-        ..Default::default()
-    };
-    let mut sprite_transform = Transform::default();
-    sprite_transform.scale = Vec3::new(0.25, 0.25, 0.25);
+    let radius = 1.;
     let player_id = commands
-        .spawn_bundle(body)
-        .insert_bundle(collider)
+        .spawn_bundle(RigidBodyBundle {
+            position: [0., radius].into(),
+            ..Default::default()
+        })
+        .insert_bundle(ColliderBundle {
+            shape: ColliderShape::ball(radius),
+            ..Default::default()
+        })
         .insert_bundle(SpriteBundle {
             material: materials.add(textures.bevy.clone().into()),
-            transform: sprite_transform,
+            transform:  Transform {
+                scale: Vec3::new(0.25, 0.25, 0.25),
+                ..Transform::default()
+            },
             ..Default::default()
         })
         .insert(ColliderPositionSync::Discrete)
         .insert(Player)
         .id();
 
-    let joint = BallJoint::new(Vec2::new(0.0, 0.0).into(), Vec2::new(0.0, -2.05).into());
+    let mut joint = BallJoint::new(Vec2::new(0.0, 0.0).into(), Vec2::new(0.0, -2.05).into());
+    joint.motor_model = SpringModel::Disabled;
     commands
         .spawn()
         .insert(JointBuilderComponent::new(joint, player_id, body_id));
@@ -104,14 +104,14 @@ fn move_player(
     if actions.player_movement.is_none() {
         return;
     }
-    let speed = 10.;
+    let speed = 20.;
     let movement = Vec3::new(
         actions.player_movement.unwrap().x * speed * time.delta_seconds(),
         actions.player_movement.unwrap().y * speed * time.delta_seconds(),
         0.,
     );
     for mut player_velocity in player_query.iter_mut() {
-        player_velocity.angvel -= movement.x;
+        player_velocity.angvel = clamp(player_velocity.angvel - movement.x, -5., 5.);
         // player_velocity.linvel.data.0[0][0] += movement.x;
     }
 }
