@@ -1,8 +1,5 @@
-use crate::loading::TextureAssets;
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
-
-use nalgebra::Isometry2;
 
 pub struct GamePlugin;
 
@@ -32,5 +29,5 @@ enum GameState {
     // During this State the actual game logic is executed
     Playing,
     // Here the menu is drawn and waiting for player interaction
-    Menu,
+    _Menu,
 }
