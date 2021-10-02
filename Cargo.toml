@@ -8,6 +8,9 @@ edition = "2018"
 [profile.dev]
 opt-level = 1
 
+[profile.release]
+codegen-units = 1
+
 [features]
 default = [
     "bevy/bevy_gltf",
