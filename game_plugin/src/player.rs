@@ -35,59 +35,9 @@ pub fn setup_physics(
     textures: Res<TextureAssets>,
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
-    commands
-        .spawn_bundle(ColliderBundle {
-            shape: ColliderShape::cuboid(250.0, 1.0),
-            ..Default::default()
-        })
-        .insert(ColliderDebugRender::default())
-        .insert(ColliderPositionSync::Discrete);
-
-    let body_id = commands
-        .spawn_bundle(RigidBodyBundle {
-            position: [0., 5.].into(),
-            forces: RigidBodyForces {
-                gravity_scale: 0.1,
-                ..Default::default()
-            },
-            ..Default::default()
-        })
-        .insert_bundle(ColliderBundle {
-            shape: ColliderShape::capsule([0., -0.5].into(), [0., 0.5].into(), 0.5),
-            ..Default::default()
-        })
-        .insert_bundle(SpriteBundle {
-            material: materials.add(textures.body.clone().into()),
-            transform: Transform {
-                scale: Vec3::new(0.125, 0.125, 0.125),
-                ..Transform::default()
-            },
-            ..Default::default()
-        })
-        .insert(ColliderPositionSync::Discrete)
-        .id();
-
-    let radius = 1.;
-    let player_id = commands
-        .spawn_bundle(RigidBodyBundle {
-            position: [0., radius].into(),
-            ..Default::default()
-        })
-        .insert_bundle(ColliderBundle {
-            shape: ColliderShape::ball(radius),
-            ..Default::default()
-        })
-        .insert_bundle(SpriteBundle {
-            material: materials.add(textures.bevy.clone().into()),
-            transform:  Transform {
-                scale: Vec3::new(0.25, 0.25, 0.25),
-                ..Transform::default()
-            },
-            ..Default::default()
-        })
-        .insert(ColliderPositionSync::Discrete)
-        .insert(Player)
-        .id();
+    spawn_ground(&mut commands);
+    let body_id = spawn_body(&mut commands, &textures, &mut materials);
+    let player_id = spawn_wheel(&mut commands, &textures, &mut materials);
 
     let mut joint = BallJoint::new(Vec2::new(0.0, 0.0).into(), Vec2::new(0.0, -2.05).into());
     joint.motor_model = SpringModel::Disabled;
@@ -114,4 +64,72 @@ fn move_player(
         player_velocity.angvel = clamp(player_velocity.angvel - movement.x, -5., 5.);
         // player_velocity.linvel.data.0[0][0] += movement.x;
     }
+}
+
+fn spawn_ground(commands: &mut Commands) {
+    commands
+        .spawn_bundle(ColliderBundle {
+            shape: ColliderShape::cuboid(250.0, 1.0),
+            ..Default::default()
+        })
+        .insert(ColliderDebugRender::default())
+        .insert(ColliderPositionSync::Discrete);
+}
+
+fn spawn_body(
+    commands: &mut Commands,
+    textures: &TextureAssets,
+    materials: &mut Assets<ColorMaterial>,
+) -> Entity {
+    commands
+        .spawn_bundle(RigidBodyBundle {
+            position: [0., 5.].into(),
+            forces: RigidBodyForces {
+                gravity_scale: 0.1,
+                ..Default::default()
+            },
+            ..Default::default()
+        })
+        .insert_bundle(ColliderBundle {
+            shape: ColliderShape::capsule([0., -0.5].into(), [0., 0.5].into(), 0.5),
+            ..Default::default()
+        })
+        .insert_bundle(SpriteBundle {
+            material: materials.add(textures.body.clone().into()),
+            transform: Transform {
+                scale: Vec3::new(0.125, 0.125, 0.125),
+                ..Transform::default()
+            },
+            ..Default::default()
+        })
+        .insert(ColliderPositionSync::Discrete)
+        .id()
+}
+
+fn spawn_wheel(
+    commands: &mut Commands,
+    textures: &TextureAssets,
+    materials: &mut Assets<ColorMaterial>,
+) -> Entity {
+    let radius = 1.;
+    commands
+        .spawn_bundle(RigidBodyBundle {
+            position: [0., radius].into(),
+            ..Default::default()
+        })
+        .insert_bundle(ColliderBundle {
+            shape: ColliderShape::ball(radius),
+            ..Default::default()
+        })
+        .insert_bundle(SpriteBundle {
+            material: materials.add(textures.bevy.clone().into()),
+            transform: Transform {
+                scale: Vec3::new(0.25, 0.25, 0.25),
+                ..Transform::default()
+            },
+            ..Default::default()
+        })
+        .insert(ColliderPositionSync::Discrete)
+        .insert(Player)
+        .id()
 }
