@@ -7,6 +7,7 @@ use crate::GameState;
 use bevy::prelude::*;
 use bevy_rapier2d::na::Point2;
 use bevy_rapier2d::prelude::*;
+use nalgebra::Isometry2;
 
 pub struct PlayerPlugin;
 
@@ -135,9 +136,9 @@ fn move_head(
 fn spawn_ground(commands: &mut Commands) {
     commands
         .spawn_bundle(ColliderBundle {
-            shape: ColliderShape::cuboid((800.0 / PHYSICS_SCALE) * 5., PATH_HEIGTH),
+            shape: ColliderShape::cuboid((400.0 / PHYSICS_SCALE) * 5., PATH_HEIGTH),
             position: ColliderPosition(Isometry::from(Point2::from([
-                (800.0 / PHYSICS_SCALE) * 2.5,
+                (800.0 / PHYSICS_SCALE) * 2.,
                 0.,
             ]))),
             ..Default::default()
@@ -145,6 +146,18 @@ fn spawn_ground(commands: &mut Commands) {
         .insert(ColliderDebugRender::default())
         .insert(ColliderPositionSync::Discrete)
         .insert(Platform)
+        .insert(ForLevel);
+    commands
+        .spawn_bundle(ColliderBundle {
+            shape: ColliderShape::cuboid(300.0 / PHYSICS_SCALE, PATH_HEIGTH),
+            position: ColliderPosition(Isometry2::new(
+                [-(400.0 / PHYSICS_SCALE), 300.0 / PHYSICS_SCALE].into(),
+                std::f32::consts::FRAC_PI_2,
+            )),
+            ..Default::default()
+        })
+        .insert(ColliderDebugRender::default())
+        .insert(ColliderPositionSync::Discrete)
         .insert(ForLevel);
 }
 
