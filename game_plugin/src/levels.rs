@@ -1,9 +1,10 @@
 use crate::actions::Actions;
 use crate::loading::FontAssets;
-use crate::lost::{BlockLoosing, ButtonInteraction, ButtonMaterials};
+use crate::lost::{ButtonInteraction, ButtonMaterials};
 use crate::player::*;
 use crate::GameState;
 use bevy::prelude::*;
+use bevy_rapier2d::na::Point2;
 use bevy_rapier2d::prelude::*;
 
 pub struct LevelsPlugin;
@@ -56,9 +57,11 @@ impl Level {
 impl Plugin for LevelsPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.insert_resource(Level::Tutorial)
-            .insert_resource(BlockDone::NotBlocked)
             .add_system_set(
                 SystemSet::on_update(GameState::Prepare).with_system(prepare_level.system()),
+            )
+            .add_system_set(
+                SystemSet::on_enter(GameState::PrepareLevel).with_system(build_parcours.system()),
             )
             .add_system_set(
                 SystemSet::on_update(GameState::PrepareLevel).with_system(start_level.system()),
@@ -127,14 +130,9 @@ fn cross_finish_line(
     mut body_query: Query<&Transform, (With<Body>, Without<Wheel>, Without<Head>)>,
     level: Res<Level>,
     mut state: ResMut<State<GameState>>,
-    mut block_done: ResMut<BlockDone>,
 ) {
     let body_transform = body_query.single_mut().unwrap();
 
-    if *block_done == BlockDone::Blocked {
-        *block_done = BlockDone::NotBlocked;
-        return;
-    }
     if body_transform.translation.x > level.finish_line() {
         warn!("Done");
         state.push(GameState::Finished).unwrap();
@@ -159,12 +157,6 @@ pub fn reset_level(
     head_position.next_position = Isometry::from(starting_points.head);
 }
 
-#[derive(PartialEq)]
-pub enum BlockDone {
-    Blocked,
-    NotBlocked,
-}
-
 fn next_level(
     mut commands: Commands,
     mut wheel_query: Query<
@@ -184,16 +176,12 @@ fn next_level(
     mut state: ResMut<State<GameState>>,
     mut interaction_query: Query<ButtonInteraction, (Changed<Interaction>, With<Button>)>,
     text_query: Query<Entity, With<Text>>,
-    mut block_loosing: ResMut<BlockLoosing>,
-    mut block_done: ResMut<BlockDone>,
 ) {
     for (button, interaction, mut material, children) in interaction_query.iter_mut() {
         let text = text_query.get(children[0]).unwrap();
         match *interaction {
             Interaction::Clicked => {
                 *level = Level::First;
-                *block_loosing = BlockLoosing::Blocked;
-                *block_done = BlockDone::Blocked;
                 commands.entity(button).despawn();
                 commands.entity(text).despawn();
                 state.replace(GameState::PrepareLevel).unwrap();
@@ -254,4 +242,29 @@ fn show_finished_button(
                 ..Default::default()
             });
         });
+}
+
+fn build_parcours(mut commands: Commands, level: Res<Level>) {
+    let mut boulders = vec![];
+    match *level {
+        Level::Tutorial => {
+            boulders.push(Point2::from([800.0 / PHYSICS_SCALE, 2.]));
+        }
+        Level::First => {
+            boulders.push(Point2::from([800.0 / PHYSICS_SCALE, 2.]));
+            boulders.push(Point2::from([(800.0 / PHYSICS_SCALE) * 2., 2.]));
+        }
+    }
+    for boulder in boulders.drain(..) {
+        commands
+            .spawn_bundle(ColliderBundle {
+                shape: ColliderShape::cuboid(2., 1.),
+                position: ColliderPosition(Isometry::from(boulder)),
+                ..Default::default()
+            })
+            .insert(ColliderDebugRender::default())
+            .insert(ColliderPositionSync::Discrete)
+            .insert(Platform)
+            .insert(ForLevel);
+    }
 }

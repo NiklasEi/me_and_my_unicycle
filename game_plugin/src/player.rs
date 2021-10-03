@@ -74,22 +74,28 @@ pub fn prepare_player_and_platforms(
         Vec2::new(0.0, -0.5 * BODY_LENGTH - BODY_RADIUS - WHEEL_RADIUS - 0.1).into(),
     );
     wheel_body_joint.motor_model = SpringModel::Disabled;
-    commands.spawn().insert(JointBuilderComponent::new(
-        wheel_body_joint,
-        wheel_id,
-        body_id,
-    ));
+    commands
+        .spawn()
+        .insert(JointBuilderComponent::new(
+            wheel_body_joint,
+            wheel_id,
+            body_id,
+        ))
+        .insert(ForLevel);
 
     let mut body_head_joint = BallJoint::new(
         Vec2::new(0.0, 0.5 * BODY_LENGTH + BODY_RADIUS).into(),
         Vec2::new(0.0, -0.5 * HEAD_RADIUS).into(),
     );
     body_head_joint.motor_model = SpringModel::Disabled;
-    commands.spawn().insert(JointBuilderComponent::new(
-        body_head_joint,
-        body_id,
-        head_id,
-    ));
+    commands
+        .spawn()
+        .insert(JointBuilderComponent::new(
+            body_head_joint,
+            body_id,
+            head_id,
+        ))
+        .insert(ForLevel);
 }
 
 fn paddle_wheel(
@@ -269,11 +275,12 @@ fn jump(
     mut sound_effects: EventWriter<PlaySoundEffect>,
     narrow_phase: Res<NarrowPhase>,
 ) {
-    if !actions.jump || actions.restart {
-        return;
-    }
+    // give it a frame until allowing the next jump...
     if *jump_block == JumpBlock::Blocked {
         *jump_block = JumpBlock::NotBlocked;
+        return;
+    }
+    if !actions.jump || actions.restart {
         return;
     }
     if let Ok((wheel, mut wheel_velocity, wheel_transform)) = wheel_query.single_mut() {

@@ -11,7 +11,6 @@ pub struct LostPlugin;
 impl Plugin for LostPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.init_resource::<ButtonMaterials>()
-            .insert_resource(BlockLoosing::NotBlocked)
             .add_system_set(
                 SystemSet::on_update(GameState::InLevel)
                     .with_system(lost.system().label(LostSystem::Lost)),
@@ -28,35 +27,25 @@ pub enum LostSystem {
     Lost,
 }
 
-#[derive(PartialEq)]
-pub enum BlockLoosing {
-    Blocked,
-    NotBlocked,
-}
-
 fn lost(
     mut head_query: Query<Entity, (With<Head>, Without<Platform>)>,
     platform_query: Query<Entity, (With<Platform>, Without<Head>)>,
     narrow_phase: Res<NarrowPhase>,
     mut sounds: EventWriter<PlaySoundEffect>,
     mut state: ResMut<State<GameState>>,
-    mut block_loosing: ResMut<BlockLoosing>,
 ) {
     if let Ok(head) = head_query.single_mut() {
         for platform in platform_query.iter() {
             if let Some(contact_pair) = narrow_phase.contact_pair(head.handle(), platform.handle())
             {
-                if contact_pair.has_any_active_contact && *block_loosing == BlockLoosing::NotBlocked
-                {
+                if contact_pair.has_any_active_contact {
                     warn!("Lost!");
                     sounds.send(PlaySoundEffect::Loose);
                     state.push(GameState::Lost).unwrap();
-                    *block_loosing = BlockLoosing::Blocked;
                     return;
                 }
             }
         }
-        *block_loosing = BlockLoosing::NotBlocked;
     } else {
         warn!("Why is there more than one player?");
     }
