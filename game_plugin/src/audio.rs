@@ -15,6 +15,9 @@ impl Plugin for InternalAudioPlugin {
             )
             .add_system_set(
                 SystemSet::on_update(GameState::InLevel).with_system(play_sound_effects.system()),
+            )
+            .add_system_set(
+                SystemSet::on_update(GameState::Lost).with_system(play_sound_effects.system()),
             );
     }
 }
@@ -22,6 +25,7 @@ impl Plugin for InternalAudioPlugin {
 pub enum PlaySoundEffect {
     Jump,
     Land,
+    Loose,
 }
 
 fn play_sound_effects(
@@ -38,6 +42,10 @@ fn play_sound_effects(
             PlaySoundEffect::Land => {
                 audio.play(audio_assets.land_1.clone());
             }
+            PlaySoundEffect::Loose => match rand::thread_rng().gen_range(0..2) {
+                0 => audio.play(audio_assets.loose_1.clone()),
+                _ => audio.play(audio_assets.loose_2.clone()),
+            },
         }
     }
 }

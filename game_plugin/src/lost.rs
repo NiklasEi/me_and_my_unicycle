@@ -1,3 +1,4 @@
+use crate::audio::PlaySoundEffect;
 use crate::levels::{reset_level, Level};
 use crate::loading::FontAssets;
 use crate::player::*;
@@ -30,6 +31,7 @@ fn lost(
     mut head_query: Query<Entity, (With<Head>, Without<Platform>)>,
     platform_query: Query<Entity, (With<Platform>, Without<Head>)>,
     narrow_phase: Res<NarrowPhase>,
+    mut sounds: EventWriter<PlaySoundEffect>,
     mut state: ResMut<State<GameState>>,
 ) {
     if let Ok(head) = head_query.single_mut() {
@@ -38,6 +40,7 @@ fn lost(
             {
                 if contact_pair.has_any_active_contact {
                     warn!("Lost!");
+                    sounds.send(PlaySoundEffect::Loose);
                     state.push(GameState::Lost).unwrap();
                     return;
                 }
