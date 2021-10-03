@@ -24,7 +24,7 @@ pub struct StartingPoint {
 pub struct ForLevel;
 
 impl Level {
-    fn get_starting_points(&self) -> StartingPoint {
+    pub fn get_starting_points(&self) -> StartingPoint {
         match self {
             _ => StartingPoint {
                 wheel: [0., 0.5 * PATH_HEIGTH + WHEEL_RADIUS].into(),
@@ -46,7 +46,7 @@ impl Level {
         }
     }
 
-    fn finish_line(&self) -> f32 {
+    pub fn finish_line(&self) -> f32 {
         match self {
             Level::Tutorial => 800. * 4.,
             Level::First => 500. * 4.,

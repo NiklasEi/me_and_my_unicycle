@@ -63,8 +63,9 @@ pub fn prepare_player_and_platforms(
     mut commands: Commands,
     textures: Res<TextureAssets>,
     mut materials: ResMut<Assets<ColorMaterial>>,
+    level: Res<Level>
 ) {
-    spawn_ground(&mut commands);
+    spawn_ground(&mut commands, &level);
     let head_id = spawn_head(&mut commands, &textures, &mut materials);
     let body_id = spawn_body(&mut commands, &textures, &mut materials);
     let wheel_id = spawn_wheel(&mut commands, &textures, &mut materials);
@@ -141,12 +142,14 @@ fn move_head(
     }
 }
 
-fn spawn_ground(commands: &mut Commands) {
+fn spawn_ground(commands: &mut Commands, level: &Level) {
+    let finish_line = level.finish_line();
+    let ground_length = (finish_line + 800.) / PHYSICS_SCALE;
     commands
         .spawn_bundle(ColliderBundle {
-            shape: ColliderShape::cuboid((400.0 / PHYSICS_SCALE) * 5., PATH_HEIGTH),
+            shape: ColliderShape::cuboid(ground_length / 2., PATH_HEIGTH),
             position: ColliderPosition(Isometry::from(Point2::from([
-                (800.0 / PHYSICS_SCALE) * 2.,
+                ground_length / 2. - 400. / PHYSICS_SCALE,
                 0.,
             ]))),
             ..Default::default()
@@ -171,7 +174,7 @@ fn spawn_ground(commands: &mut Commands) {
         .spawn_bundle(ColliderBundle {
             shape: ColliderShape::cuboid(300.0 / PHYSICS_SCALE, PATH_HEIGTH),
             position: ColliderPosition(Isometry2::new(
-                [(800.0 / PHYSICS_SCALE) * 4.5, 300.0 / PHYSICS_SCALE].into(),
+                [ground_length - 400. / PHYSICS_SCALE, 300.0 / PHYSICS_SCALE].into(),
                 std::f32::consts::FRAC_PI_2,
             )),
             ..Default::default()
@@ -374,6 +377,18 @@ fn draw_background(
                 material: materials.add(textures.tutorial.clone().into()),
                 transform: {
                     let mut transform = Transform::from_translation(Vec3::new(-180.0, 250.0, 0.0));
+                    transform.scale = Vec3::new(0.5, 0.5, 0.5);
+
+                    transform
+                },
+                ..Default::default()
+            })
+            .insert(ForLevel);
+        commands
+            .spawn_bundle(SpriteBundle {
+                material: materials.add(textures.tutorial_jump.clone().into()),
+                transform: {
+                    let mut transform = Transform::from_translation(Vec3::new(620.0, 250.0, 0.0));
                     transform.scale = Vec3::new(0.5, 0.5, 0.5);
 
                     transform
