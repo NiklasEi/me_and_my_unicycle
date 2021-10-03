@@ -30,6 +30,7 @@ pub struct Platform;
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.insert_resource(JumpBlock::NotBlocked)
+            .insert_resource(LandBlock::NotBlocked)
             .add_system_set(
                 SystemSet::on_enter(GameState::Prepare)
                     .with_system(setup_rapier_and_camera.system()),
@@ -63,7 +64,7 @@ pub fn prepare_player_and_platforms(
     mut commands: Commands,
     textures: Res<TextureAssets>,
     mut materials: ResMut<Assets<ColorMaterial>>,
-    level: Res<Level>
+    level: Res<Level>,
 ) {
     spawn_ground(&mut commands, &level);
     let head_id = spawn_head(&mut commands, &textures, &mut materials);
@@ -247,7 +248,7 @@ fn spawn_head(
             ..Default::default()
         })
         .insert_bundle(SpriteBundle {
-            material: materials.add(textures.bevy.clone().into()),
+            material: materials.add(textures.head.clone().into()),
             transform: Transform {
                 scale: Vec3::new(0.125, 0.125, 0.125),
                 ..Transform::default()
@@ -311,13 +312,27 @@ fn jump(
     }
 }
 
+#[derive(PartialEq)]
+enum LandBlock {
+    Blocked,
+    NotBlocked,
+}
+
 fn landing(
     mut contact_event: EventReader<ContactEvent>,
     mut sound_effects: EventWriter<PlaySoundEffect>,
+    mut land_block: ResMut<LandBlock>,
 ) {
+    // give it a frame until playing the next sound...
+    if *land_block == LandBlock::Blocked {
+        *land_block = LandBlock::NotBlocked;
+        return;
+    }
     for event in contact_event.iter() {
         if let ContactEvent::Started(_, _) = event {
             sound_effects.send(PlaySoundEffect::Land);
+            *land_block = LandBlock::Blocked;
+            return;
         }
     }
 }
@@ -342,7 +357,7 @@ fn spawn_wheel(
             ..Default::default()
         })
         .insert_bundle(SpriteBundle {
-            material: materials.add(textures.bevy.clone().into()),
+            material: materials.add(textures.wheel.clone().into()),
             transform: Transform {
                 scale: Vec3::new(0.25, 0.25, 0.25),
                 ..Transform::default()

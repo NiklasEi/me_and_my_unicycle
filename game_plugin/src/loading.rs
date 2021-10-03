@@ -42,8 +42,10 @@ pub struct FontAssets {
 
 #[derive(AssetCollection)]
 pub struct TextureAssets {
-    #[asset(path = "textures/bevy.png")]
-    pub bevy: Handle<Texture>,
+    #[asset(path = "textures/wheel.png")]
+    pub wheel: Handle<Texture>,
+    #[asset(path = "textures/head.png")]
+    pub head: Handle<Texture>,
     #[asset(path = "textures/body.png")]
     pub body: Handle<Texture>,
     #[asset(path = "textures/background_1.png")]

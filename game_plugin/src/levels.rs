@@ -230,7 +230,7 @@ fn show_finished_button(
             parent.spawn_bundle(TextBundle {
                 text: Text {
                     sections: vec![TextSection {
-                        value: "Nice, continue!".to_string(),
+                        value: "Next!".to_string(),
                         style: TextStyle {
                             font: font_assets.fira_sans.clone(),
                             font_size: 40.0,
