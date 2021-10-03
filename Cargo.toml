@@ -1,8 +1,8 @@
 [package]
-name = "bevy_game" # ToDo
+name = "me_and_my_unicycle"
 version = "0.1.0"
 publish = false
-authors = ["Niklas Eicker <git@nikl.me>"] # ToDo: you are the author ;)
+authors = ["Niklas Eicker <git@nikl.me>"]
 edition = "2018"
 
 [profile.dev]
