@@ -2,6 +2,7 @@ use crate::actions::Actions;
 use crate::audio::PlaySoundEffect;
 use crate::levels::ForLevel;
 use crate::loading::TextureAssets;
+use crate::lost::LostSystem;
 use crate::GameState;
 use bevy::prelude::*;
 use bevy_rapier2d::na::clamp;
@@ -35,6 +36,7 @@ impl Plugin for PlayerPlugin {
         )
         .add_system_set(
             SystemSet::on_update(GameState::InLevel)
+                .before(LostSystem::Lost)
                 .with_system(paddle_wheel.system())
                 .with_system(move_head.system())
                 .with_system(move_camera.system())
@@ -235,6 +237,7 @@ fn jump(
             if let Some(contact_pair) = narrow_phase.contact_pair(wheel.handle(), platform.handle())
             {
                 if contact_pair.has_any_active_contact {
+                    warn!("JUMP!");
                     let body_transform = body_query.single_mut().unwrap();
                     let jump_direction = Vec2::new(
                         body_transform.translation.x - wheel_transform.translation.x,

@@ -80,20 +80,32 @@ fn restart(
     level: Res<Level>,
 ) {
     if actions.restart {
-        let starting_points = level.get_starting_points();
         let (mut wheel_velocity, mut wheel_position) = wheel_query.single_mut().unwrap();
-        *wheel_velocity = RigidBodyVelocity::default();
-        wheel_position.position = Isometry::from(starting_points.wheel);
-        wheel_position.next_position = Isometry::from(starting_points.wheel);
-
         let (mut body_velocity, mut body_position) = body_query.single_mut().unwrap();
-        *body_velocity = RigidBodyVelocity::default();
-        body_position.position = Isometry::from(starting_points.body);
-        body_position.next_position = Isometry::from(starting_points.body);
-
         let (mut head_velocity, mut head_position) = head_query.single_mut().unwrap();
-        *head_velocity = RigidBodyVelocity::default();
-        head_position.position = Isometry::from(starting_points.head);
-        head_position.next_position = Isometry::from(starting_points.head);
+        reset_level(
+            &level,
+            (&mut wheel_velocity, &mut wheel_position),
+            (&mut body_velocity, &mut body_position),
+            (&mut head_velocity, &mut head_position),
+        )
     }
+}
+
+pub fn reset_level(
+    level: &Level,
+    (wheel_velocity, mut wheel_position): (&mut RigidBodyVelocity, &mut RigidBodyPosition),
+    (body_velocity, mut body_position): (&mut RigidBodyVelocity, &mut RigidBodyPosition),
+    (head_velocity, mut head_position): (&mut RigidBodyVelocity, &mut RigidBodyPosition),
+) {
+    let starting_points = level.get_starting_points();
+    *wheel_velocity = RigidBodyVelocity::default();
+    wheel_position.position = Isometry::from(starting_points.wheel);
+    wheel_position.next_position = Isometry::from(starting_points.wheel);
+    *body_velocity = RigidBodyVelocity::default();
+    body_position.position = Isometry::from(starting_points.body);
+    body_position.next_position = Isometry::from(starting_points.body);
+    *head_velocity = RigidBodyVelocity::default();
+    head_position.position = Isometry::from(starting_points.head);
+    head_position.next_position = Isometry::from(starting_points.head);
 }

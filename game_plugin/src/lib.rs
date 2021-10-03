@@ -7,12 +7,14 @@ mod actions;
 mod audio;
 mod levels;
 mod loading;
+mod lost;
 mod menu;
 mod player;
 
 use crate::actions::ActionsPlugin;
 use crate::audio::InternalAudioPlugin;
 use crate::levels::LevelsPlugin;
+use crate::lost::LostPlugin;
 use crate::menu::MenuPlugin;
 use crate::player::PlayerPlugin;
 use loading::LoadingPlugin;
@@ -27,6 +29,7 @@ impl Plugin for GamePlugin {
             .add_plugin(PlayerPlugin)
             .add_plugin(InternalAudioPlugin)
             .add_plugin(LevelsPlugin)
+            .add_plugin(LostPlugin)
             .add_plugin(MenuPlugin);
     }
 }
@@ -37,4 +40,5 @@ enum GameState {
     Menu,
     Prepare,
     InLevel,
+    Lost,
 }
