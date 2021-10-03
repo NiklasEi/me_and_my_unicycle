@@ -26,8 +26,6 @@ pub struct Body;
 pub struct Camera;
 pub struct Platform;
 
-/// This plugin handles player related stuff like movement
-/// Player logic is only active during the State `GameState::Playing`
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.insert_resource(JumpBlock::NotBlocked)
