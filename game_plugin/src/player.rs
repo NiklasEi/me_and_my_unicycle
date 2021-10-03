@@ -159,6 +159,18 @@ fn spawn_ground(commands: &mut Commands) {
         .insert(ColliderDebugRender::default())
         .insert(ColliderPositionSync::Discrete)
         .insert(ForLevel);
+    commands
+        .spawn_bundle(ColliderBundle {
+            shape: ColliderShape::cuboid(300.0 / PHYSICS_SCALE, PATH_HEIGTH),
+            position: ColliderPosition(Isometry2::new(
+                [(800.0 / PHYSICS_SCALE) * 4.5, 300.0 / PHYSICS_SCALE].into(),
+                std::f32::consts::FRAC_PI_2,
+            )),
+            ..Default::default()
+        })
+        .insert(ColliderDebugRender::default())
+        .insert(ColliderPositionSync::Discrete)
+        .insert(ForLevel);
 }
 
 fn spawn_body(

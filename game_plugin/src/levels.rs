@@ -39,6 +39,12 @@ impl Level {
             .into(),
         }
     }
+
+    fn finish_line(&self) -> f32 {
+        match self {
+            Level::Tutorial => 800. * 4.
+        }
+    }
 }
 
 impl Plugin for LevelsPlugin {
@@ -50,7 +56,7 @@ impl Plugin for LevelsPlugin {
             .add_system_set(
                 SystemSet::on_exit(GameState::InLevel).with_system(clear_level.system()),
             )
-            .add_system_set(SystemSet::on_update(GameState::InLevel).with_system(restart.system()));
+            .add_system_set(SystemSet::on_update(GameState::InLevel).with_system(restart.system()).with_system(cross_finish_line.system()));
     }
 }
 
@@ -90,6 +96,19 @@ fn restart(
             (&mut body_velocity, &mut body_position),
             (&mut head_velocity, &mut head_position),
         )
+    }
+}
+
+pub fn cross_finish_line(
+    mut body_query: Query<
+        &Transform,
+        (With<Body>, Without<Wheel>, Without<Head>),
+    >,
+level: Res<Level>) {
+
+    let body_transform = body_query.single_mut().unwrap();
+    if body_transform.translation.x > level.finish_line() {
+        warn!("Done");
     }
 }
 
