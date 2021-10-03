@@ -39,6 +39,8 @@ enum GameState {
     Loading,
     Menu,
     Prepare,
+    PrepareLevel,
     InLevel,
     Lost,
+    Finished,
 }

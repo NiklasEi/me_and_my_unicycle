@@ -29,23 +29,25 @@ pub struct Platform;
 /// Player logic is only active during the State `GameState::Playing`
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut AppBuilder) {
-        app.add_system_set(
-            SystemSet::on_enter(GameState::Prepare).with_system(setup_rapier_and_camera.system()),
-        )
-        .add_system_set(
-            SystemSet::on_enter(GameState::InLevel)
-                .with_system(prepare_player_and_platforms.system())
-                .with_system(draw_background.system()),
-        )
-        .add_system_set(
-            SystemSet::on_update(GameState::InLevel)
-                .before(LostSystem::Lost)
-                .with_system(paddle_wheel.system())
-                .with_system(move_head.system())
-                .with_system(move_camera.system())
-                .with_system(jump.system())
-                .with_system(landing.system()),
-        );
+        app.insert_resource(JumpBlock::NotBlocked)
+            .add_system_set(
+                SystemSet::on_enter(GameState::Prepare)
+                    .with_system(setup_rapier_and_camera.system()),
+            )
+            .add_system_set(
+                SystemSet::on_enter(GameState::PrepareLevel)
+                    .with_system(prepare_player_and_platforms.system())
+                    .with_system(draw_background.system()),
+            )
+            .add_system_set(
+                SystemSet::on_update(GameState::InLevel)
+                    .before(LostSystem::Lost)
+                    .with_system(paddle_wheel.system())
+                    .with_system(move_head.system())
+                    .with_system(move_camera.system())
+                    .with_system(jump.system())
+                    .with_system(landing.system()),
+            );
     }
 }
 
@@ -249,12 +251,19 @@ fn spawn_head(
         .id()
 }
 
+#[derive(PartialEq)]
+enum JumpBlock {
+    Blocked,
+    NotBlocked,
+}
+
 fn jump(
     actions: Res<Actions>,
     mut wheel_query: Query<
         (Entity, &mut RigidBodyVelocity, &Transform),
         (With<Wheel>, Without<Body>),
     >,
+    mut jump_block: ResMut<JumpBlock>,
     mut body_query: Query<&Transform, (With<Body>, Without<Wheel>)>,
     platform_query: Query<Entity, (With<Platform>, Without<Wheel>, Without<Body>)>,
     mut sound_effects: EventWriter<PlaySoundEffect>,
@@ -263,12 +272,17 @@ fn jump(
     if !actions.jump || actions.restart {
         return;
     }
+    if *jump_block == JumpBlock::Blocked {
+        *jump_block = JumpBlock::NotBlocked;
+        return;
+    }
     if let Ok((wheel, mut wheel_velocity, wheel_transform)) = wheel_query.single_mut() {
         for platform in platform_query.iter() {
             if let Some(contact_pair) = narrow_phase.contact_pair(wheel.handle(), platform.handle())
             {
                 if contact_pair.has_any_active_contact {
                     warn!("JUMP!");
+                    *jump_block = JumpBlock::Blocked;
                     let body_transform = body_query.single_mut().unwrap();
                     let jump_direction = Vec2::new(
                         body_transform.translation.x - wheel_transform.translation.x,
@@ -339,22 +353,26 @@ fn draw_background(
 ) {
     let material = materials.add(textures.background_1.clone().into());
     for slot in 0..5 {
-        commands.spawn_bundle(SpriteBundle {
-            material: material.clone(),
-            transform: Transform::from_translation(Vec3::new(slot as f32 * 800.0, 300.0, 0.0)),
-            ..Default::default()
-        });
+        commands
+            .spawn_bundle(SpriteBundle {
+                material: material.clone(),
+                transform: Transform::from_translation(Vec3::new(slot as f32 * 800.0, 300.0, 0.0)),
+                ..Default::default()
+            })
+            .insert(ForLevel);
     }
     if *level == Level::Tutorial {
-        commands.spawn_bundle(SpriteBundle {
-            material: materials.add(textures.tutorial.clone().into()),
-            transform: {
-                let mut transform = Transform::from_translation(Vec3::new(-180.0, 250.0, 0.0));
-                transform.scale = Vec3::new(0.5, 0.5, 0.5);
+        commands
+            .spawn_bundle(SpriteBundle {
+                material: materials.add(textures.tutorial.clone().into()),
+                transform: {
+                    let mut transform = Transform::from_translation(Vec3::new(-180.0, 250.0, 0.0));
+                    transform.scale = Vec3::new(0.5, 0.5, 0.5);
 
-                transform
-            },
-            ..Default::default()
-        });
+                    transform
+                },
+                ..Default::default()
+            })
+            .insert(ForLevel);
     }
 }

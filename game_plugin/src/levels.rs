@@ -1,4 +1,6 @@
 use crate::actions::Actions;
+use crate::loading::FontAssets;
+use crate::lost::{BlockLoosing, ButtonInteraction, ButtonMaterials};
 use crate::player::*;
 use crate::GameState;
 use bevy::prelude::*;
@@ -9,6 +11,7 @@ pub struct LevelsPlugin;
 #[derive(PartialEq)]
 pub enum Level {
     Tutorial,
+    First,
 }
 
 pub struct StartingPoint {
@@ -21,28 +24,31 @@ pub struct ForLevel;
 
 impl Level {
     fn get_starting_points(&self) -> StartingPoint {
-        StartingPoint {
-            wheel: [0., 0.5 * PATH_HEIGTH + WHEEL_RADIUS].into(),
-            body: [
-                0.,
-                0.5 * PATH_HEIGTH + 2. * WHEEL_RADIUS + 0.5 * BODY_LENGTH + BODY_RADIUS,
-            ]
-            .into(),
-            head: [
-                0.,
-                0.5 * PATH_HEIGTH
-                    + 2. * WHEEL_RADIUS
-                    + BODY_LENGTH
-                    + 2. * BODY_RADIUS
-                    + HEAD_RADIUS,
-            ]
-            .into(),
+        match self {
+            _ => StartingPoint {
+                wheel: [0., 0.5 * PATH_HEIGTH + WHEEL_RADIUS].into(),
+                body: [
+                    0.,
+                    0.5 * PATH_HEIGTH + 2. * WHEEL_RADIUS + 0.5 * BODY_LENGTH + BODY_RADIUS,
+                ]
+                .into(),
+                head: [
+                    0.,
+                    0.5 * PATH_HEIGTH
+                        + 2. * WHEEL_RADIUS
+                        + BODY_LENGTH
+                        + 2. * BODY_RADIUS
+                        + HEAD_RADIUS,
+                ]
+                .into(),
+            },
         }
     }
 
     fn finish_line(&self) -> f32 {
         match self {
-            Level::Tutorial => 800. * 4.
+            Level::Tutorial => 800. * 4.,
+            Level::First => 500. * 4.,
         }
     }
 }
@@ -50,17 +56,35 @@ impl Level {
 impl Plugin for LevelsPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.insert_resource(Level::Tutorial)
+            .insert_resource(BlockDone::NotBlocked)
             .add_system_set(
-                SystemSet::on_update(GameState::Prepare).with_system(move_to_level.system()),
+                SystemSet::on_update(GameState::Prepare).with_system(prepare_level.system()),
+            )
+            .add_system_set(
+                SystemSet::on_update(GameState::PrepareLevel).with_system(start_level.system()),
             )
             .add_system_set(
                 SystemSet::on_exit(GameState::InLevel).with_system(clear_level.system()),
             )
-            .add_system_set(SystemSet::on_update(GameState::InLevel).with_system(restart.system()).with_system(cross_finish_line.system()));
+            .add_system_set(
+                SystemSet::on_update(GameState::InLevel)
+                    .with_system(restart.system())
+                    .with_system(cross_finish_line.system()),
+            )
+            .add_system_set(
+                SystemSet::on_enter(GameState::Finished).with_system(show_finished_button.system()),
+            )
+            .add_system_set(
+                SystemSet::on_update(GameState::Finished).with_system(next_level.system()),
+            );
     }
 }
 
-fn move_to_level(mut state: ResMut<State<GameState>>) {
+fn prepare_level(mut state: ResMut<State<GameState>>) {
+    state.set(GameState::PrepareLevel).unwrap();
+}
+
+fn start_level(mut state: ResMut<State<GameState>>) {
     state.set(GameState::InLevel).unwrap();
 }
 
@@ -99,16 +123,21 @@ fn restart(
     }
 }
 
-pub fn cross_finish_line(
-    mut body_query: Query<
-        &Transform,
-        (With<Body>, Without<Wheel>, Without<Head>),
-    >,
-level: Res<Level>) {
-
+fn cross_finish_line(
+    mut body_query: Query<&Transform, (With<Body>, Without<Wheel>, Without<Head>)>,
+    level: Res<Level>,
+    mut state: ResMut<State<GameState>>,
+    mut block_done: ResMut<BlockDone>,
+) {
     let body_transform = body_query.single_mut().unwrap();
+
+    if *block_done == BlockDone::Blocked {
+        *block_done = BlockDone::NotBlocked;
+        return;
+    }
     if body_transform.translation.x > level.finish_line() {
         warn!("Done");
+        state.push(GameState::Finished).unwrap();
     }
 }
 
@@ -128,4 +157,101 @@ pub fn reset_level(
     *head_velocity = RigidBodyVelocity::default();
     head_position.position = Isometry::from(starting_points.head);
     head_position.next_position = Isometry::from(starting_points.head);
+}
+
+#[derive(PartialEq)]
+pub enum BlockDone {
+    Blocked,
+    NotBlocked,
+}
+
+fn next_level(
+    mut commands: Commands,
+    mut wheel_query: Query<
+        (&mut RigidBodyVelocity, &mut RigidBodyPosition),
+        (With<Wheel>, Without<Body>, Without<Head>),
+    >,
+    mut body_query: Query<
+        (&mut RigidBodyVelocity, &mut RigidBodyPosition),
+        (With<Body>, Without<Wheel>, Without<Head>),
+    >,
+    mut head_query: Query<
+        (&mut RigidBodyVelocity, &mut RigidBodyPosition),
+        (With<Head>, Without<Wheel>, Without<Body>),
+    >,
+    mut level: ResMut<Level>,
+    button_materials: Res<ButtonMaterials>,
+    mut state: ResMut<State<GameState>>,
+    mut interaction_query: Query<ButtonInteraction, (Changed<Interaction>, With<Button>)>,
+    text_query: Query<Entity, With<Text>>,
+    mut block_loosing: ResMut<BlockLoosing>,
+    mut block_done: ResMut<BlockDone>,
+) {
+    for (button, interaction, mut material, children) in interaction_query.iter_mut() {
+        let text = text_query.get(children[0]).unwrap();
+        match *interaction {
+            Interaction::Clicked => {
+                *level = Level::First;
+                *block_loosing = BlockLoosing::Blocked;
+                *block_done = BlockDone::Blocked;
+                commands.entity(button).despawn();
+                commands.entity(text).despawn();
+                state.replace(GameState::PrepareLevel).unwrap();
+                let (mut wheel_velocity, mut wheel_position) = wheel_query.single_mut().unwrap();
+                let (mut body_velocity, mut body_position) = body_query.single_mut().unwrap();
+                let (mut head_velocity, mut head_position) = head_query.single_mut().unwrap();
+                reset_level(
+                    &level,
+                    (&mut wheel_velocity, &mut wheel_position),
+                    (&mut body_velocity, &mut body_position),
+                    (&mut head_velocity, &mut head_position),
+                );
+            }
+            Interaction::Hovered => {
+                *material = button_materials.hovered.clone();
+            }
+            Interaction::None => {
+                *material = button_materials.normal.clone();
+            }
+        }
+    }
+}
+
+struct FinishedButton;
+
+fn show_finished_button(
+    mut commands: Commands,
+    font_assets: Res<FontAssets>,
+    button_materials: Res<ButtonMaterials>,
+) {
+    commands.spawn_bundle(UiCameraBundle::default());
+    commands
+        .spawn_bundle(ButtonBundle {
+            style: Style {
+                size: Size::new(Val::Px(120.0), Val::Px(50.0)),
+                margin: Rect::all(Val::Auto),
+                justify_content: JustifyContent::Center,
+                align_items: AlignItems::Center,
+                ..Default::default()
+            },
+            material: button_materials.normal.clone(),
+            ..Default::default()
+        })
+        .insert(FinishedButton)
+        .with_children(|parent| {
+            parent.spawn_bundle(TextBundle {
+                text: Text {
+                    sections: vec![TextSection {
+                        value: "Nice, continue!".to_string(),
+                        style: TextStyle {
+                            font: font_assets.fira_sans.clone(),
+                            font_size: 40.0,
+                            color: Color::rgb(0.9, 0.9, 0.9),
+                        },
+                    }],
+                    alignment: Default::default(),
+                },
+                ..Default::default()
+            });
+        });
 }

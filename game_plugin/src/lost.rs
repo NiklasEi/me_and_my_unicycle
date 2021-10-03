@@ -11,6 +11,7 @@ pub struct LostPlugin;
 impl Plugin for LostPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.init_resource::<ButtonMaterials>()
+            .insert_resource(BlockLoosing::NotBlocked)
             .add_system_set(
                 SystemSet::on_update(GameState::InLevel)
                     .with_system(lost.system().label(LostSystem::Lost)),
@@ -27,25 +28,35 @@ pub enum LostSystem {
     Lost,
 }
 
+#[derive(PartialEq)]
+pub enum BlockLoosing {
+    Blocked,
+    NotBlocked,
+}
+
 fn lost(
     mut head_query: Query<Entity, (With<Head>, Without<Platform>)>,
     platform_query: Query<Entity, (With<Platform>, Without<Head>)>,
     narrow_phase: Res<NarrowPhase>,
     mut sounds: EventWriter<PlaySoundEffect>,
     mut state: ResMut<State<GameState>>,
+    mut block_loosing: ResMut<BlockLoosing>,
 ) {
     if let Ok(head) = head_query.single_mut() {
         for platform in platform_query.iter() {
             if let Some(contact_pair) = narrow_phase.contact_pair(head.handle(), platform.handle())
             {
-                if contact_pair.has_any_active_contact {
+                if contact_pair.has_any_active_contact && *block_loosing == BlockLoosing::NotBlocked
+                {
                     warn!("Lost!");
                     sounds.send(PlaySoundEffect::Loose);
                     state.push(GameState::Lost).unwrap();
+                    *block_loosing = BlockLoosing::Blocked;
                     return;
                 }
             }
         }
+        *block_loosing = BlockLoosing::NotBlocked;
     } else {
         warn!("Why is there more than one player?");
     }
@@ -77,7 +88,7 @@ fn restart(
             Interaction::Clicked => {
                 commands.entity(button).despawn();
                 commands.entity(text).despawn();
-                state.pop().unwrap();
+                state.replace(GameState::PrepareLevel).unwrap();
                 let (mut wheel_velocity, mut wheel_position) = wheel_query.single_mut().unwrap();
                 let (mut body_velocity, mut body_position) = body_query.single_mut().unwrap();
                 let (mut head_velocity, mut head_position) = head_query.single_mut().unwrap();
@@ -98,9 +109,9 @@ fn restart(
     }
 }
 
-struct ButtonMaterials {
-    normal: Handle<ColorMaterial>,
-    hovered: Handle<ColorMaterial>,
+pub struct ButtonMaterials {
+    pub normal: Handle<ColorMaterial>,
+    pub hovered: Handle<ColorMaterial>,
 }
 
 impl FromWorld for ButtonMaterials {
@@ -152,7 +163,7 @@ fn show_restart_button(
         });
 }
 
-type ButtonInteraction<'a> = (
+pub type ButtonInteraction<'a> = (
     Entity,
     &'a Interaction,
     &'a mut Handle<ColorMaterial>,
