@@ -90,7 +90,7 @@ fn paddle_wheel(
     actions: Res<Actions>,
     mut wheel_query: Query<&mut RigidBodyVelocity, With<Wheel>>,
 ) {
-    if actions.paddling.is_none() {
+    if actions.paddling.is_none() || actions.restart {
         return;
     }
     let speed = 20.;
@@ -117,7 +117,7 @@ fn move_head(
     actions: Res<Actions>,
     mut head_query: Query<&mut RigidBodyVelocity, With<Head>>,
 ) {
-    if actions.head_balance.is_none() {
+    if actions.head_balance.is_none() || actions.restart {
         return;
     }
     let speed = 20.;
@@ -227,7 +227,7 @@ fn jump(
     mut sound_effects: EventWriter<PlaySoundEffect>,
     narrow_phase: Res<NarrowPhase>,
 ) {
-    if !actions.jump {
+    if !actions.jump || actions.restart {
         return;
     }
     if let Ok((wheel, mut wheel_velocity, wheel_transform)) = wheel_query.single_mut() {
