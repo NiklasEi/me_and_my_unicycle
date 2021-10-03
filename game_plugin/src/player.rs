@@ -1,11 +1,11 @@
 use crate::actions::Actions;
 use crate::audio::PlaySoundEffect;
-use crate::levels::ForLevel;
+use crate::levels::{ForLevel, Level};
 use crate::loading::TextureAssets;
 use crate::lost::LostSystem;
 use crate::GameState;
 use bevy::prelude::*;
-use bevy_rapier2d::na::clamp;
+use bevy_rapier2d::na::Point2;
 use bevy_rapier2d::prelude::*;
 
 pub struct PlayerPlugin;
@@ -15,6 +15,8 @@ pub const HEAD_RADIUS: f32 = 0.5;
 pub const BODY_RADIUS: f32 = 0.5;
 pub const BODY_LENGTH: f32 = 1.;
 pub const PATH_HEIGTH: f32 = 1.0;
+
+pub const PHYSICS_SCALE: f32 = 32.0;
 
 pub struct Wheel;
 pub struct Head;
@@ -47,7 +49,7 @@ impl Plugin for PlayerPlugin {
 }
 
 fn setup_rapier_and_camera(mut commands: Commands, mut configuration: ResMut<RapierConfiguration>) {
-    configuration.scale = 32.0;
+    configuration.scale = PHYSICS_SCALE;
 
     let mut camera = OrthographicCameraBundle::new_2d();
     camera.transform = Transform::from_translation(Vec3::new(0.0, 300.0, 0.0));
@@ -98,7 +100,7 @@ fn paddle_wheel(
     let speed = 20.;
     let movement = actions.paddling.unwrap() * speed * time.delta_seconds();
     for mut wheel_velocity in wheel_query.iter_mut() {
-        wheel_velocity.angvel = clamp(wheel_velocity.angvel - movement, -5., 5.);
+        wheel_velocity.angvel = wheel_velocity.angvel - movement;
         // player_velocity.linvel.data.0[0][0] += movement.x;
     }
 }
@@ -133,7 +135,11 @@ fn move_head(
 fn spawn_ground(commands: &mut Commands) {
     commands
         .spawn_bundle(ColliderBundle {
-            shape: ColliderShape::cuboid(250.0, PATH_HEIGTH),
+            shape: ColliderShape::cuboid((800.0 / PHYSICS_SCALE) * 5., PATH_HEIGTH),
+            position: ColliderPosition(Isometry::from(Point2::from([
+                (800.0 / PHYSICS_SCALE) * 2.5,
+                0.,
+            ]))),
             ..Default::default()
         })
         .insert(ColliderDebugRender::default())
@@ -304,12 +310,25 @@ fn draw_background(
     mut commands: Commands,
     textures: Res<TextureAssets>,
     mut materials: ResMut<Assets<ColorMaterial>>,
+    level: Res<Level>,
 ) {
     let material = materials.add(textures.background_1.clone().into());
-    for slot in -9..10 {
+    for slot in 0..5 {
         commands.spawn_bundle(SpriteBundle {
             material: material.clone(),
             transform: Transform::from_translation(Vec3::new(slot as f32 * 800.0, 300.0, 0.0)),
+            ..Default::default()
+        });
+    }
+    if *level == Level::Tutorial {
+        commands.spawn_bundle(SpriteBundle {
+            material: materials.add(textures.tutorial.clone().into()),
+            transform: {
+                let mut transform = Transform::from_translation(Vec3::new(-180.0, 250.0, 0.0));
+                transform.scale = Vec3::new(0.5, 0.5, 0.5);
+
+                transform
+            },
             ..Default::default()
         });
     }

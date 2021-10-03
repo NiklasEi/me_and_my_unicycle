@@ -6,6 +6,7 @@ use bevy_rapier2d::prelude::*;
 
 pub struct LevelsPlugin;
 
+#[derive(PartialEq)]
 pub enum Level {
     Tutorial,
 }
