@@ -8,6 +8,7 @@ use bevy::prelude::*;
 use bevy_rapier2d::na::Point2;
 use bevy_rapier2d::prelude::*;
 use nalgebra::Isometry2;
+use rand::Rng;
 
 pub struct PlayerPlugin;
 
@@ -376,11 +377,20 @@ fn draw_background(
     mut materials: ResMut<Assets<ColorMaterial>>,
     level: Res<Level>,
 ) {
-    let material = materials.add(textures.background_1.clone().into());
+    let mut random = rand::thread_rng();
     for slot in 0..5 {
         commands
             .spawn_bundle(SpriteBundle {
-                material: material.clone(),
+                material: materials.add(
+                    {
+                        match random.gen_range(0..3) {
+                            0 => textures.background_1.clone(),
+                            1 => textures.background_2.clone(),
+                            _ => textures.background_3.clone(),
+                        }
+                    }
+                    .into(),
+                ),
                 transform: Transform::from_translation(Vec3::new(slot as f32 * 800.0, 300.0, 0.0)),
                 ..Default::default()
             })

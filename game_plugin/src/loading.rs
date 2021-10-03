@@ -50,6 +50,10 @@ pub struct TextureAssets {
     pub body: Handle<Texture>,
     #[asset(path = "textures/background_1.png")]
     pub background_1: Handle<Texture>,
+    #[asset(path = "textures/background_2.png")]
+    pub background_2: Handle<Texture>,
+    #[asset(path = "textures/background_3.png")]
+    pub background_3: Handle<Texture>,
     #[asset(path = "textures/tutorial.png")]
     pub tutorial: Handle<Texture>,
     #[asset(path = "textures/tutorial_jump.png")]
