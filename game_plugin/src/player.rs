@@ -1,5 +1,6 @@
 use crate::actions::Actions;
 use crate::audio::PlaySoundEffect;
+use crate::levels::ForLevel;
 use crate::loading::TextureAssets;
 use crate::GameState;
 use bevy::prelude::*;
@@ -8,11 +9,11 @@ use bevy_rapier2d::prelude::*;
 
 pub struct PlayerPlugin;
 
-const WHEEL_RADIUS: f32 = 1.;
-const HEAD_RADIUS: f32 = 0.5;
-const BODY_RADIUS: f32 = 0.5;
-const BODY_LENGTH: f32 = 1.;
-const PATH_HEIGTH: f32 = 1.0;
+pub const WHEEL_RADIUS: f32 = 1.;
+pub const HEAD_RADIUS: f32 = 0.5;
+pub const BODY_RADIUS: f32 = 0.5;
+pub const BODY_LENGTH: f32 = 1.;
+pub const PATH_HEIGTH: f32 = 1.0;
 
 pub struct Wheel;
 pub struct Head;
@@ -25,13 +26,15 @@ pub struct Platform;
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.add_system_set(
-            SystemSet::on_enter(GameState::Playing)
-                .with_system(setup_graphics.system())
-                .with_system(setup_physics.system())
-                .with_system(background.system()),
+            SystemSet::on_enter(GameState::Prepare).with_system(setup_rapier_and_camera.system()),
         )
         .add_system_set(
-            SystemSet::on_update(GameState::Playing)
+            SystemSet::on_enter(GameState::InLevel)
+                .with_system(prepare_player_and_platforms.system())
+                .with_system(draw_background.system()),
+        )
+        .add_system_set(
+            SystemSet::on_update(GameState::InLevel)
                 .with_system(paddle_wheel.system())
                 .with_system(move_head.system())
                 .with_system(move_camera.system())
@@ -41,7 +44,7 @@ impl Plugin for PlayerPlugin {
     }
 }
 
-fn setup_graphics(mut commands: Commands, mut configuration: ResMut<RapierConfiguration>) {
+fn setup_rapier_and_camera(mut commands: Commands, mut configuration: ResMut<RapierConfiguration>) {
     configuration.scale = 32.0;
 
     let mut camera = OrthographicCameraBundle::new_2d();
@@ -49,7 +52,7 @@ fn setup_graphics(mut commands: Commands, mut configuration: ResMut<RapierConfig
     commands.spawn_bundle(camera).insert(Camera);
 }
 
-pub fn setup_physics(
+pub fn prepare_player_and_platforms(
     mut commands: Commands,
     textures: Res<TextureAssets>,
     mut materials: ResMut<Assets<ColorMaterial>>,
@@ -133,7 +136,8 @@ fn spawn_ground(commands: &mut Commands) {
         })
         .insert(ColliderDebugRender::default())
         .insert(ColliderPositionSync::Discrete)
-        .insert(Platform);
+        .insert(Platform)
+        .insert(ForLevel);
 }
 
 fn spawn_body(
@@ -172,6 +176,7 @@ fn spawn_body(
         })
         .insert(ColliderPositionSync::Discrete)
         .insert(Body)
+        .insert(ForLevel)
         .id()
 }
 
@@ -207,6 +212,7 @@ fn spawn_head(
         })
         .insert(ColliderPositionSync::Discrete)
         .insert(Head)
+        .insert(ForLevel)
         .id()
 }
 
@@ -287,10 +293,11 @@ fn spawn_wheel(
         })
         .insert(ColliderPositionSync::Discrete)
         .insert(Wheel)
+        .insert(ForLevel)
         .id()
 }
 
-fn background(
+fn draw_background(
     mut commands: Commands,
     textures: Res<TextureAssets>,
     mut materials: ResMut<Assets<ColorMaterial>>,

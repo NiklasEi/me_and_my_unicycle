@@ -11,10 +11,10 @@ impl Plugin for InternalAudioPlugin {
         app.add_plugin(AudioPlugin)
             .add_event::<PlaySoundEffect>()
             .add_system_set(
-                SystemSet::on_enter(GameState::Playing).with_system(start_background.system()),
+                SystemSet::on_enter(GameState::Menu).with_system(start_background.system()),
             )
             .add_system_set(
-                SystemSet::on_update(GameState::Playing).with_system(play_sound_effects.system()),
+                SystemSet::on_update(GameState::InLevel).with_system(play_sound_effects.system()),
             );
     }
 }
