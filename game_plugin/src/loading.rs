@@ -27,6 +27,10 @@ pub struct AudioAssets {
     pub loose_1: Handle<AudioSource>,
     #[asset(path = "audio/loose_2.ogg")]
     pub loose_2: Handle<AudioSource>,
+    #[asset(path = "audio/won.ogg")]
+    pub won: Handle<AudioSource>,
+    #[asset(path = "audio/fall.ogg")]
+    pub fall: Handle<AudioSource>,
     #[asset(path = "audio/background.ogg")]
     pub background: Handle<AudioSource>,
 }

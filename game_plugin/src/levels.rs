@@ -1,4 +1,5 @@
 use crate::actions::Actions;
+use crate::audio::PlaySoundEffect;
 use crate::loading::FontAssets;
 use crate::lost::{ButtonInteraction, ButtonMaterials};
 use crate::nalgebra::Isometry2;
@@ -183,12 +184,14 @@ fn cross_finish_line(
     mut body_query: Query<&Transform, With<Body>>,
     level: Res<Level>,
     mut state: ResMut<State<GameState>>,
+    mut sound_effects: EventWriter<PlaySoundEffect>,
 ) {
     let body_transform = body_query.single_mut().unwrap();
 
     if body_transform.translation.x > level.finish_line() {
         warn!("Done");
         state.push(GameState::Finished).unwrap();
+        sound_effects.send(PlaySoundEffect::Won);
     }
 }
 
@@ -331,11 +334,13 @@ fn build_collider(isometry: Isometry2<f32>, shape: ColliderShape) -> ColliderBun
 fn fall(
     mut body_query: Query<&RigidBodyPosition, With<Body>>,
     mut state: ResMut<State<GameState>>,
+    mut sound_effects: EventWriter<PlaySoundEffect>,
 ) {
     let body_transform = body_query.single_mut().unwrap();
 
     if body_transform.position.translation.y < BOULDER_HEIGTH {
         warn!("FELL!");
+        sound_effects.send(PlaySoundEffect::Fall);
         state.push(GameState::Lost).unwrap();
     }
 }

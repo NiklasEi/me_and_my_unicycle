@@ -26,6 +26,8 @@ pub enum PlaySoundEffect {
     Jump,
     Land,
     Loose,
+    Fall,
+    Won,
 }
 
 fn play_sound_effects(
@@ -41,6 +43,12 @@ fn play_sound_effects(
             },
             PlaySoundEffect::Land => {
                 audio.play(audio_assets.land_1.clone());
+            }
+            PlaySoundEffect::Fall => {
+                audio.play(audio_assets.fall.clone());
+            }
+            PlaySoundEffect::Won => {
+                audio.play(audio_assets.won.clone());
             }
             PlaySoundEffect::Loose => match rand::thread_rng().gen_range(0..2) {
                 0 => audio.play(audio_assets.loose_1.clone()),
