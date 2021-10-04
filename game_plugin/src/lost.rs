@@ -120,7 +120,6 @@ fn show_restart_button(
     font_assets: Res<FontAssets>,
     button_materials: Res<ButtonMaterials>,
 ) {
-    commands.spawn_bundle(UiCameraBundle::default());
     commands
         .spawn_bundle(ButtonBundle {
             style: Style {

@@ -275,7 +275,6 @@ fn show_finished_button(
     level: Res<Level>,
 ) {
     let is_last_level = level.next().is_none();
-    commands.spawn_bundle(UiCameraBundle::default());
     commands
         .spawn_bundle(ButtonBundle {
             style: Style {

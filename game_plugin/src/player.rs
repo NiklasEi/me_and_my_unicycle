@@ -61,6 +61,7 @@ fn setup_rapier_and_camera(mut commands: Commands, mut configuration: ResMut<Rap
     let mut camera = OrthographicCameraBundle::new_2d();
     camera.transform = Transform::from_translation(Vec3::new(0.0, 300.0, 0.0));
     commands.spawn_bundle(camera).insert(Camera);
+    commands.spawn_bundle(UiCameraBundle::default());
 }
 
 pub fn prepare_player_and_platforms(
