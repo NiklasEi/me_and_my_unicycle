@@ -47,6 +47,10 @@ impl Plugin for PlayerPlugin {
                     .with_system(move_camera.system())
                     .with_system(jump.system())
                     .with_system(landing.system()),
+            )
+            .add_system_set(SystemSet::on_update(GameState::Lost).with_system(move_camera.system()))
+            .add_system_set(
+                SystemSet::on_update(GameState::Finished).with_system(move_camera.system()),
             );
     }
 }
@@ -177,6 +181,17 @@ fn spawn_ground(commands: &mut Commands, level: &Level) {
             .insert(Platform)
             .insert(ForLevel);
     }
+    commands
+        .spawn_bundle(ColliderBundle {
+            shape: ColliderShape::cuboid((800. / PHYSICS_SCALE) * 5., BOULDER_HEIGTH),
+            position: ColliderPosition(Isometry::from(Point2::from([
+                (800. / PHYSICS_SCALE) * 4.5,
+                -200. / PHYSICS_SCALE,
+            ]))),
+            ..Default::default()
+        })
+        .insert(ColliderPositionSync::Discrete)
+        .insert(ForLevel);
     commands
         .spawn_bundle(ColliderBundle {
             shape: ColliderShape::cuboid(300.0 / PHYSICS_SCALE, BOULDER_HEIGTH),
