@@ -327,7 +327,6 @@ fn jump(
             if let Some(contact_pair) = narrow_phase.contact_pair(wheel.handle(), platform.handle())
             {
                 if contact_pair.has_any_active_contact {
-                    warn!("JUMP!");
                     *jump_block = JumpBlock::Blocked;
                     let body_transform = body_query.single_mut().unwrap();
                     let jump_direction = Vec2::new(
@@ -359,16 +358,19 @@ fn landing(
     mut land_block: ResMut<LandBlock>,
 ) {
     // give it a frame until playing the next sound...
+    let mut play = false;
+    for event in contact_event.iter() {
+        if let ContactEvent::Started(_, _) = event {
+            play = true;
+        }
+    }
     if *land_block == LandBlock::Blocked {
         *land_block = LandBlock::NotBlocked;
         return;
     }
-    for event in contact_event.iter() {
-        if let ContactEvent::Started(_, _) = event {
-            sound_effects.send(PlaySoundEffect::Land);
-            *land_block = LandBlock::Blocked;
-            return;
-        }
+    if play {
+        sound_effects.send(PlaySoundEffect::Land);
+        *land_block = LandBlock::Blocked;
     }
 }
 
@@ -473,6 +475,22 @@ fn draw_background(
                 material: materials.add(textures.tutorial_falling.clone().into()),
                 transform: {
                     let mut transform = Transform::from_translation(Vec3::new(1600.0, 250.0, 0.0));
+                    transform.scale = Vec3::new(0.5, 0.5, 0.5);
+
+                    transform
+                },
+                ..Default::default()
+            })
+            .insert(ForLevel);
+        commands
+            .spawn_bundle(SpriteBundle {
+                material: materials.add(textures.tutorial_restart.clone().into()),
+                transform: {
+                    let mut transform = Transform::from_translation(Vec3::new(
+                        level.finish_line() + 200.,
+                        170.0,
+                        0.0,
+                    ));
                     transform.scale = Vec3::new(0.5, 0.5, 0.5);
 
                     transform

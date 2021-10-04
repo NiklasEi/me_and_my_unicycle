@@ -189,8 +189,8 @@ fn cross_finish_line(
     let body_transform = body_query.single_mut().unwrap();
 
     if body_transform.translation.x > level.finish_line() {
-        warn!("Done");
-        state.push(GameState::Finished).unwrap();
+        // make sure win + loose in one frame don't crash the game...
+        state.overwrite_push(GameState::Finished).unwrap();
         sound_effects.send(PlaySoundEffect::Won);
     }
 }
@@ -230,31 +230,48 @@ fn next_level(
     mut level: ResMut<Level>,
     button_materials: Res<ButtonMaterials>,
     mut state: ResMut<State<GameState>>,
-    mut interaction_query: Query<ButtonInteraction, (Changed<Interaction>, With<Button>)>,
+    mut interaction_query: Query<ButtonInteraction, With<Button>>,
     text_query: Query<Entity, With<Text>>,
+    input: Res<Input<KeyCode>>,
 ) {
+    let restart = input.just_pressed(KeyCode::R);
     for (button, interaction, mut material, children) in interaction_query.iter_mut() {
         let text = text_query.get(children[0]).unwrap();
+        if restart {
+            commands.entity(button).despawn();
+            commands.entity(text).despawn();
+            state.replace(GameState::PrepareLevel).unwrap();
+            let (mut wheel_velocity, mut wheel_position) = wheel_query.single_mut().unwrap();
+            let (mut body_velocity, mut body_position) = body_query.single_mut().unwrap();
+            let (mut head_velocity, mut head_position) = head_query.single_mut().unwrap();
+            reset_level(
+                &level,
+                (&mut wheel_velocity, &mut wheel_position),
+                (&mut body_velocity, &mut body_position),
+                (&mut head_velocity, &mut head_position),
+            );
+            return;
+        }
         match *interaction {
             Interaction::Clicked => {
-                if let Some(next_level) = level.next() {
-                    *level = next_level;
-                    commands.entity(button).despawn();
-                    commands.entity(text).despawn();
-                    state.replace(GameState::PrepareLevel).unwrap();
-                    let (mut wheel_velocity, mut wheel_position) =
-                        wheel_query.single_mut().unwrap();
-                    let (mut body_velocity, mut body_position) = body_query.single_mut().unwrap();
-                    let (mut head_velocity, mut head_position) = head_query.single_mut().unwrap();
-                    reset_level(
-                        &level,
-                        (&mut wheel_velocity, &mut wheel_position),
-                        (&mut body_velocity, &mut body_position),
-                        (&mut head_velocity, &mut head_position),
-                    );
-                } else {
-                    warn!("No more levels :(");
+                let next_level = level.next();
+                if next_level.is_none() {
+                    println!("No more levels :(")
                 }
+                *level = next_level.unwrap();
+                commands.entity(button).despawn();
+                commands.entity(text).despawn();
+                state.replace(GameState::PrepareLevel).unwrap();
+                let (mut wheel_velocity, mut wheel_position) = wheel_query.single_mut().unwrap();
+                let (mut body_velocity, mut body_position) = body_query.single_mut().unwrap();
+                let (mut head_velocity, mut head_position) = head_query.single_mut().unwrap();
+                reset_level(
+                    &level,
+                    (&mut wheel_velocity, &mut wheel_position),
+                    (&mut body_velocity, &mut body_position),
+                    (&mut head_velocity, &mut head_position),
+                );
+                return;
             }
             Interaction::Hovered => {
                 *material = button_materials.hovered.clone();
@@ -338,7 +355,6 @@ fn fall(
     let body_transform = body_query.single_mut().unwrap();
 
     if body_transform.position.translation.y < BOULDER_HEIGTH {
-        warn!("FELL!");
         sound_effects.send(PlaySoundEffect::Fall);
         state.push(GameState::Lost).unwrap();
     }

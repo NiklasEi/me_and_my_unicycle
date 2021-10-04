@@ -13,7 +13,7 @@ fn main() {
     app
         // .insert_resource(Msaa { samples: 4 })
         .insert_resource(bevy::log::LogSettings {
-            level: bevy::log::Level::DEBUG,
+            level: bevy::log::Level::WARN,
             filter: "wgpu=error,bevy_ecs=error".to_string(),
         })
         .insert_resource(ClearColor(Color::rgb(0.4, 0.4, 0.4)))

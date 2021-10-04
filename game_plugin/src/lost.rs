@@ -39,9 +39,8 @@ fn lost(
             if let Some(contact_pair) = narrow_phase.contact_pair(head.handle(), platform.handle())
             {
                 if contact_pair.has_any_active_contact {
-                    warn!("Lost!");
                     sounds.send(PlaySoundEffect::Loose);
-                    state.push(GameState::Lost).unwrap();
+                    state.overwrite_push(GameState::Lost).unwrap();
                     return;
                 }
             }
