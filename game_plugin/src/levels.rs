@@ -1,6 +1,7 @@
 use crate::actions::Actions;
 use crate::loading::FontAssets;
 use crate::lost::{ButtonInteraction, ButtonMaterials};
+use crate::nalgebra::Isometry2;
 use crate::player::*;
 use crate::GameState;
 use bevy::prelude::*;
@@ -13,6 +14,7 @@ pub struct LevelsPlugin;
 pub enum Level {
     Tutorial,
     First,
+    Second,
 }
 
 pub struct StartingPoint {
@@ -48,9 +50,59 @@ impl Level {
 
     pub fn finish_line(&self) -> f32 {
         match self {
-            Level::Tutorial => 800. * 4.,
-            Level::First => 500. * 4.,
+            Level::Tutorial => 800. * 3.,
+            Level::First => 800. * 3.,
+            Level::Second => 800. * 3.,
         }
+    }
+
+    pub fn holes(&self) -> Vec<[f32; 2]> {
+        match self {
+            Level::Tutorial => vec![],
+            Level::First => vec![[864., 1000.]],
+            Level::Second => vec![[800., 1250.]],
+        }
+    }
+
+    pub fn next(&self) -> Option<Level> {
+        match self {
+            Level::Tutorial => Some(Level::First),
+            Level::First => Some(Level::Second),
+            Level::Second => None,
+        }
+    }
+
+    pub fn colliders(&self) -> Vec<ColliderBundle> {
+        let mut colliders = vec![];
+        match self {
+            Level::Tutorial => {
+                colliders.push(build_collider(
+                    Isometry::from(Point2::from([800.0 / PHYSICS_SCALE, 2.])),
+                    ColliderShape::cuboid(2., 1.),
+                ));
+            }
+            Level::First => {
+                colliders.push(build_collider(
+                    Isometry::from(Point2::from([800.0 / PHYSICS_SCALE, 2.])),
+                    ColliderShape::cuboid(2., 1.),
+                ));
+                colliders.push(build_collider(
+                    Isometry::from(Point2::from([(800.0 / PHYSICS_SCALE) * 2.5, 2.])),
+                    ColliderShape::cuboid(2., 1.),
+                ));
+            }
+            Level::Second => {
+                colliders.push(build_collider(
+                    Isometry2::new(
+                        [800.0 / PHYSICS_SCALE, 2.].into(),
+                        std::f32::consts::FRAC_PI_4,
+                    ),
+                    ColliderShape::cuboid(4., 1.),
+                ));
+            }
+        }
+
+        colliders
     }
 }
 
@@ -181,19 +233,24 @@ fn next_level(
         let text = text_query.get(children[0]).unwrap();
         match *interaction {
             Interaction::Clicked => {
-                *level = Level::First;
-                commands.entity(button).despawn();
-                commands.entity(text).despawn();
-                state.replace(GameState::PrepareLevel).unwrap();
-                let (mut wheel_velocity, mut wheel_position) = wheel_query.single_mut().unwrap();
-                let (mut body_velocity, mut body_position) = body_query.single_mut().unwrap();
-                let (mut head_velocity, mut head_position) = head_query.single_mut().unwrap();
-                reset_level(
-                    &level,
-                    (&mut wheel_velocity, &mut wheel_position),
-                    (&mut body_velocity, &mut body_position),
-                    (&mut head_velocity, &mut head_position),
-                );
+                if let Some(next_level) = level.next() {
+                    *level = next_level;
+                    commands.entity(button).despawn();
+                    commands.entity(text).despawn();
+                    state.replace(GameState::PrepareLevel).unwrap();
+                    let (mut wheel_velocity, mut wheel_position) =
+                        wheel_query.single_mut().unwrap();
+                    let (mut body_velocity, mut body_position) = body_query.single_mut().unwrap();
+                    let (mut head_velocity, mut head_position) = head_query.single_mut().unwrap();
+                    reset_level(
+                        &level,
+                        (&mut wheel_velocity, &mut wheel_position),
+                        (&mut body_velocity, &mut body_position),
+                        (&mut head_velocity, &mut head_position),
+                    );
+                } else {
+                    warn!("No more levels :(");
+                }
             }
             Interaction::Hovered => {
                 *material = button_materials.hovered.clone();
@@ -211,7 +268,9 @@ fn show_finished_button(
     mut commands: Commands,
     font_assets: Res<FontAssets>,
     button_materials: Res<ButtonMaterials>,
+    level: Res<Level>,
 ) {
+    let is_last_level = level.next().is_none();
     commands.spawn_bundle(UiCameraBundle::default());
     commands
         .spawn_bundle(ButtonBundle {
@@ -230,7 +289,11 @@ fn show_finished_button(
             parent.spawn_bundle(TextBundle {
                 text: Text {
                     sections: vec![TextSection {
-                        value: "Next!".to_string(),
+                        value: if is_last_level {
+                            "Nice!".to_string()
+                        } else {
+                            "Next!".to_string()
+                        },
                         style: TextStyle {
                             font: font_assets.fira_sans.clone(),
                             font_size: 40.0,
@@ -245,26 +308,21 @@ fn show_finished_button(
 }
 
 fn build_parcours(mut commands: Commands, level: Res<Level>) {
-    let mut boulders = vec![];
-    match *level {
-        Level::Tutorial => {
-            boulders.push(Point2::from([800.0 / PHYSICS_SCALE, 2.]));
-        }
-        Level::First => {
-            boulders.push(Point2::from([800.0 / PHYSICS_SCALE, 2.]));
-            boulders.push(Point2::from([(800.0 / PHYSICS_SCALE) * 2., 2.]));
-        }
-    }
-    for boulder in boulders.drain(..) {
+    let mut colliders = level.colliders();
+    for collider in colliders.drain(..) {
         commands
-            .spawn_bundle(ColliderBundle {
-                shape: ColliderShape::cuboid(2., 1.),
-                position: ColliderPosition(Isometry::from(boulder)),
-                ..Default::default()
-            })
+            .spawn_bundle(collider)
             .insert(ColliderDebugRender::default())
             .insert(ColliderPositionSync::Discrete)
             .insert(Platform)
             .insert(ForLevel);
+    }
+}
+
+fn build_collider(isometry: Isometry2<f32>, shape: ColliderShape) -> ColliderBundle {
+    ColliderBundle {
+        shape,
+        position: ColliderPosition(isometry),
+        ..Default::default()
     }
 }

@@ -145,19 +145,38 @@ fn move_head(
 fn spawn_ground(commands: &mut Commands, level: &Level) {
     let finish_line = level.finish_line();
     let ground_length = (finish_line + 800.) / PHYSICS_SCALE;
-    commands
-        .spawn_bundle(ColliderBundle {
-            shape: ColliderShape::cuboid(ground_length / 2., PATH_HEIGTH),
-            position: ColliderPosition(Isometry::from(Point2::from([
-                ground_length / 2. - 400. / PHYSICS_SCALE,
-                0.,
-            ]))),
-            ..Default::default()
-        })
-        .insert(ColliderDebugRender::default())
-        .insert(ColliderPositionSync::Discrete)
-        .insert(Platform)
-        .insert(ForLevel);
+    let mut border_points: Vec<f32> = level
+        .holes()
+        .iter()
+        .flat_map(|hole| vec![hole[0] / PHYSICS_SCALE, hole[1] / PHYSICS_SCALE])
+        .collect();
+    border_points.push((finish_line + 400.) / PHYSICS_SCALE);
+    border_points.insert(0, -400. / PHYSICS_SCALE);
+    let (beginning, end): (Vec<(usize, f32)>, Vec<(usize, f32)>) = border_points
+        .drain(..)
+        .enumerate()
+        .partition(|(index, _)| index % 2 == 0);
+    let mut starting_points: Vec<f32> = beginning.iter().map(|(_, value)| *value).collect();
+    let mut ending_points: Vec<f32> = end.iter().map(|(_, value)| *value).collect();
+    let borders: Vec<(f32, f32)> = starting_points
+        .drain(..)
+        .zip(ending_points.drain(..))
+        .collect();
+    for (start, end) in borders {
+        commands
+            .spawn_bundle(ColliderBundle {
+                shape: ColliderShape::cuboid((end - start) / 2., PATH_HEIGTH),
+                position: ColliderPosition(Isometry::from(Point2::from([
+                    start + (end - start) / 2.,
+                    0.,
+                ]))),
+                ..Default::default()
+            })
+            .insert(ColliderDebugRender::default())
+            .insert(ColliderPositionSync::Discrete)
+            .insert(Platform)
+            .insert(ForLevel);
+    }
     commands
         .spawn_bundle(ColliderBundle {
             shape: ColliderShape::cuboid(300.0 / PHYSICS_SCALE, PATH_HEIGTH),
