@@ -29,15 +29,15 @@ impl Level {
     pub fn get_starting_points(&self) -> StartingPoint {
         match self {
             _ => StartingPoint {
-                wheel: [0., 0.5 * PATH_HEIGTH + WHEEL_RADIUS].into(),
+                wheel: [0., 0.5 * BOULDER_HEIGTH + WHEEL_RADIUS].into(),
                 body: [
                     0.,
-                    0.5 * PATH_HEIGTH + 2. * WHEEL_RADIUS + 0.5 * BODY_LENGTH + BODY_RADIUS,
+                    0.5 * BOULDER_HEIGTH + 2. * WHEEL_RADIUS + 0.5 * BODY_LENGTH + BODY_RADIUS,
                 ]
                 .into(),
                 head: [
                     0.,
-                    0.5 * PATH_HEIGTH
+                    0.5 * BOULDER_HEIGTH
                         + 2. * WHEEL_RADIUS
                         + BODY_LENGTH
                         + 2. * BODY_RADIUS
@@ -124,7 +124,8 @@ impl Plugin for LevelsPlugin {
             .add_system_set(
                 SystemSet::on_update(GameState::InLevel)
                     .with_system(restart.system())
-                    .with_system(cross_finish_line.system()),
+                    .with_system(cross_finish_line.system())
+                    .with_system(fall.system()),
             )
             .add_system_set(
                 SystemSet::on_enter(GameState::Finished).with_system(show_finished_button.system()),
@@ -179,7 +180,7 @@ fn restart(
 }
 
 fn cross_finish_line(
-    mut body_query: Query<&Transform, (With<Body>, Without<Wheel>, Without<Head>)>,
+    mut body_query: Query<&Transform, With<Body>>,
     level: Res<Level>,
     mut state: ResMut<State<GameState>>,
 ) {
@@ -324,5 +325,17 @@ fn build_collider(isometry: Isometry2<f32>, shape: ColliderShape) -> ColliderBun
         shape,
         position: ColliderPosition(isometry),
         ..Default::default()
+    }
+}
+
+fn fall(
+    mut body_query: Query<&RigidBodyPosition, With<Body>>,
+    mut state: ResMut<State<GameState>>,
+) {
+    let body_transform = body_query.single_mut().unwrap();
+
+    if body_transform.position.translation.y < BOULDER_HEIGTH {
+        warn!("FELL!");
+        state.push(GameState::Lost).unwrap();
     }
 }

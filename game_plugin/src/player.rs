@@ -16,7 +16,7 @@ pub const WHEEL_RADIUS: f32 = 1.;
 pub const HEAD_RADIUS: f32 = 0.5;
 pub const BODY_RADIUS: f32 = 0.5;
 pub const BODY_LENGTH: f32 = 1.;
-pub const PATH_HEIGTH: f32 = 1.0;
+pub const BOULDER_HEIGTH: f32 = 1.0;
 
 pub const PHYSICS_SCALE: f32 = 32.0;
 
@@ -165,7 +165,7 @@ fn spawn_ground(commands: &mut Commands, level: &Level) {
     for (start, end) in borders {
         commands
             .spawn_bundle(ColliderBundle {
-                shape: ColliderShape::cuboid((end - start) / 2., PATH_HEIGTH),
+                shape: ColliderShape::cuboid((end - start) / 2., BOULDER_HEIGTH),
                 position: ColliderPosition(Isometry::from(Point2::from([
                     start + (end - start) / 2.,
                     0.,
@@ -179,7 +179,7 @@ fn spawn_ground(commands: &mut Commands, level: &Level) {
     }
     commands
         .spawn_bundle(ColliderBundle {
-            shape: ColliderShape::cuboid(300.0 / PHYSICS_SCALE, PATH_HEIGTH),
+            shape: ColliderShape::cuboid(300.0 / PHYSICS_SCALE, BOULDER_HEIGTH),
             position: ColliderPosition(Isometry2::new(
                 [-(400.0 / PHYSICS_SCALE), 300.0 / PHYSICS_SCALE].into(),
                 std::f32::consts::FRAC_PI_2,
@@ -191,7 +191,7 @@ fn spawn_ground(commands: &mut Commands, level: &Level) {
         .insert(ForLevel);
     commands
         .spawn_bundle(ColliderBundle {
-            shape: ColliderShape::cuboid(300.0 / PHYSICS_SCALE, PATH_HEIGTH),
+            shape: ColliderShape::cuboid(300.0 / PHYSICS_SCALE, BOULDER_HEIGTH),
             position: ColliderPosition(Isometry2::new(
                 [ground_length - 400. / PHYSICS_SCALE, 300.0 / PHYSICS_SCALE].into(),
                 std::f32::consts::FRAC_PI_2,
@@ -212,7 +212,7 @@ fn spawn_body(
         .spawn_bundle(RigidBodyBundle {
             position: [
                 0.,
-                0.5 * PATH_HEIGTH + 2. * WHEEL_RADIUS + 0.5 * BODY_LENGTH + BODY_RADIUS,
+                BOULDER_HEIGTH + 2. * WHEEL_RADIUS + 0.5 * BODY_LENGTH + BODY_RADIUS,
             ]
             .into(),
             forces: RigidBodyForces {
@@ -233,6 +233,7 @@ fn spawn_body(
             material: materials.add(textures.body.clone().into()),
             transform: Transform {
                 scale: Vec3::new(0.125, 0.125, 0.125),
+                translation: Vec3::new(0., BOULDER_HEIGTH * PHYSICS_SCALE * 1.1, 0.),
                 ..Transform::default()
             },
             ..Default::default()
@@ -252,7 +253,7 @@ fn spawn_head(
         .spawn_bundle(RigidBodyBundle {
             position: [
                 0.,
-                0.5 * PATH_HEIGTH
+                0.5 * BOULDER_HEIGTH
                     + 2. * WHEEL_RADIUS
                     + BODY_LENGTH
                     + 2. * BODY_RADIUS
@@ -362,7 +363,7 @@ fn spawn_wheel(
 ) -> Entity {
     commands
         .spawn_bundle(RigidBodyBundle {
-            position: [0., 0.5 * PATH_HEIGTH + WHEEL_RADIUS].into(),
+            position: [0., 0.5 * BOULDER_HEIGTH + WHEEL_RADIUS].into(),
             damping: RigidBodyDamping {
                 angular_damping: 0.2.into(),
                 ..RigidBodyDamping::default()
