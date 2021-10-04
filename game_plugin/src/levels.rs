@@ -133,7 +133,7 @@ impl Level {
 
 impl Plugin for LevelsPlugin {
     fn build(&self, app: &mut AppBuilder) {
-        app.insert_resource(Level::Third)
+        app.insert_resource(Level::Tutorial)
             .add_system_set(
                 SystemSet::on_update(GameState::Prepare).with_system(prepare_level.system()),
             )
