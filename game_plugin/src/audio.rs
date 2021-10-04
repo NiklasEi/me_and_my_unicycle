@@ -18,6 +18,9 @@ impl Plugin for InternalAudioPlugin {
             )
             .add_system_set(
                 SystemSet::on_update(GameState::Lost).with_system(play_sound_effects.system()),
+            )
+            .add_system_set(
+                SystemSet::on_update(GameState::Finished).with_system(play_sound_effects.system()),
             );
     }
 }

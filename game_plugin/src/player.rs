@@ -429,6 +429,19 @@ fn draw_background(
             })
             .insert(ForLevel);
     }
+    commands
+        .spawn_bundle(SpriteBundle {
+            material: materials.add(textures.finish.clone().into()),
+            transform: {
+                let mut transform =
+                    Transform::from_translation(Vec3::new(level.finish_line(), 250.0, 0.0));
+                transform.scale = Vec3::new(0.5, 0.5, 0.5);
+
+                transform
+            },
+            ..Default::default()
+        })
+        .insert(ForLevel);
     if *level == Level::Tutorial {
         commands
             .spawn_bundle(SpriteBundle {
