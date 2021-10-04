@@ -184,17 +184,6 @@ fn spawn_ground(commands: &mut Commands, level: &Level) {
     }
     commands
         .spawn_bundle(ColliderBundle {
-            shape: ColliderShape::cuboid((800. / PHYSICS_SCALE) * 5., BOULDER_HEIGTH),
-            position: ColliderPosition(Isometry::from(Point2::from([
-                (800. / PHYSICS_SCALE) * 4.5,
-                -200. / PHYSICS_SCALE,
-            ]))),
-            ..Default::default()
-        })
-        .insert(ColliderPositionSync::Discrete)
-        .insert(ForLevel);
-    commands
-        .spawn_bundle(ColliderBundle {
             shape: ColliderShape::cuboid(300.0 / PHYSICS_SCALE, BOULDER_HEIGTH),
             position: ColliderPosition(Isometry2::new(
                 [-(400.0 / PHYSICS_SCALE), 300.0 / PHYSICS_SCALE].into(),
