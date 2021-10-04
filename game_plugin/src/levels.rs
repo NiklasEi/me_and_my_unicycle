@@ -27,6 +27,10 @@ pub struct StartingPoint {
 pub struct ForLevel;
 
 impl Level {
+    pub fn last() -> Self {
+        Level::Second
+    }
+
     pub fn get_starting_points(&self) -> StartingPoint {
         match self {
             _ => StartingPoint {
@@ -256,7 +260,8 @@ fn next_level(
             Interaction::Clicked => {
                 let next_level = level.next();
                 if next_level.is_none() {
-                    println!("No more levels :(")
+                    println!("No more levels :(");
+                    return;
                 }
                 *level = next_level.unwrap();
                 commands.entity(button).despawn();
@@ -310,7 +315,7 @@ fn show_finished_button(
                 text: Text {
                     sections: vec![TextSection {
                         value: if is_last_level {
-                            "Nice!".to_string()
+                            "Again!".to_string()
                         } else {
                             "Next!".to_string()
                         },

@@ -65,4 +65,8 @@ pub struct TextureAssets {
     pub tutorial_restart: Handle<Texture>,
     #[asset(path = "textures/finish.png")]
     pub finish: Handle<Texture>,
+    #[asset(path = "textures/player_won.png")]
+    pub player_won: Handle<Texture>,
+    #[asset(path = "textures/thanks.png")]
+    pub thanks: Handle<Texture>,
 }
