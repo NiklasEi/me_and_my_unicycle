@@ -438,5 +438,17 @@ fn draw_background(
                 ..Default::default()
             })
             .insert(ForLevel);
+        commands
+            .spawn_bundle(SpriteBundle {
+                material: materials.add(textures.tutorial_falling.clone().into()),
+                transform: {
+                    let mut transform = Transform::from_translation(Vec3::new(1600.0, 250.0, 0.0));
+                    transform.scale = Vec3::new(0.5, 0.5, 0.5);
+
+                    transform
+                },
+                ..Default::default()
+            })
+            .insert(ForLevel);
     }
 }

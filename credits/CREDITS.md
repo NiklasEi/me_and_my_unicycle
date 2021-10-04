@@ -1,5 +1,5 @@
 # Credits
 
-## Assets
+Made possible by [Bevy](https://bevyengine.org)
 
-* Bevy icon: [MIT License](licenses/Bevy_MIT_License.md); Copyright (c) 2020 Carter Anderson
+All assets and programming done by [@nikl_me](https://twitter.com/nikl_me)

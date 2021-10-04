@@ -55,4 +55,6 @@ pub struct TextureAssets {
     pub tutorial: Handle<Texture>,
     #[asset(path = "textures/tutorial_jump.png")]
     pub tutorial_jump: Handle<Texture>,
+    #[asset(path = "textures/tutorial_falling.png")]
+    pub tutorial_falling: Handle<Texture>,
 }

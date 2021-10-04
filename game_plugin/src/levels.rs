@@ -58,7 +58,7 @@ impl Level {
 
     pub fn holes(&self) -> Vec<[f32; 2]> {
         match self {
-            Level::Tutorial => vec![],
+            Level::Tutorial => vec![[1600., 1800.]],
             Level::First => vec![[864., 1000.]],
             Level::Second => vec![[800., 1250.]],
         }
@@ -87,7 +87,7 @@ impl Level {
                     ColliderShape::cuboid(2., 1.),
                 ));
                 colliders.push(build_collider(
-                    Isometry::from(Point2::from([(800.0 / PHYSICS_SCALE) * 2.5, 2.])),
+                    Isometry::from(Point2::from([(800.0 / PHYSICS_SCALE) * 1.8, 2.])),
                     ColliderShape::cuboid(2., 1.),
                 ));
             }
