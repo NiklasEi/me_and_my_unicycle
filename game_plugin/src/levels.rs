@@ -16,6 +16,7 @@ pub enum Level {
     Tutorial,
     First,
     Second,
+    Third,
 }
 
 pub struct StartingPoint {
@@ -28,7 +29,7 @@ pub struct ForLevel;
 
 impl Level {
     pub fn last() -> Self {
-        Level::Second
+        Level::Third
     }
 
     pub fn get_starting_points(&self) -> StartingPoint {
@@ -58,6 +59,7 @@ impl Level {
             Level::Tutorial => 800. * 3.,
             Level::First => 800. * 3.,
             Level::Second => 800. * 3.,
+            Level::Third => 800. * 3.,
         }
     }
 
@@ -66,14 +68,16 @@ impl Level {
             Level::Tutorial => vec![[1600., 1800.]],
             Level::First => vec![[864., 1000.]],
             Level::Second => vec![[800., 1250.]],
+            Level::Third => vec![[250., 450.], [800., 1250.]],
         }
     }
 
-    pub fn next(&self) -> Option<Level> {
+    pub fn next(&self) -> Level {
         match self {
-            Level::Tutorial => Some(Level::First),
-            Level::First => Some(Level::Second),
-            Level::Second => None,
+            Level::Tutorial => Level::First,
+            Level::First => Level::Second,
+            Level::Second => Level::Third,
+            Level::Third => Level::Tutorial,
         }
     }
 
@@ -105,6 +109,22 @@ impl Level {
                     ColliderShape::cuboid(4., 1.),
                 ));
             }
+            Level::Third => {
+                colliders.push(build_collider(
+                    Isometry2::new(
+                        [800.0 / PHYSICS_SCALE, 2.].into(),
+                        std::f32::consts::FRAC_PI_4,
+                    ),
+                    ColliderShape::cuboid(4., 1.),
+                ));
+                colliders.push(build_collider(
+                    Isometry2::new(
+                        [1250.0 / PHYSICS_SCALE, 2.].into(),
+                        -std::f32::consts::FRAC_PI_4,
+                    ),
+                    ColliderShape::cuboid(4., 1.),
+                ));
+            }
         }
 
         colliders
@@ -113,7 +133,7 @@ impl Level {
 
 impl Plugin for LevelsPlugin {
     fn build(&self, app: &mut AppBuilder) {
-        app.insert_resource(Level::Tutorial)
+        app.insert_resource(Level::Third)
             .add_system_set(
                 SystemSet::on_update(GameState::Prepare).with_system(prepare_level.system()),
             )
@@ -259,11 +279,7 @@ fn next_level(
         match *interaction {
             Interaction::Clicked => {
                 let next_level = level.next();
-                if next_level.is_none() {
-                    println!("No more levels :(");
-                    return;
-                }
-                *level = next_level.unwrap();
+                *level = next_level;
                 commands.entity(button).despawn();
                 commands.entity(text).despawn();
                 state.replace(GameState::PrepareLevel).unwrap();
@@ -296,7 +312,7 @@ fn show_finished_button(
     button_materials: Res<ButtonMaterials>,
     level: Res<Level>,
 ) {
-    let is_last_level = level.next().is_none();
+    let is_last_level = *level == Level::last();
     commands
         .spawn_bundle(ButtonBundle {
             style: Style {
@@ -315,7 +331,7 @@ fn show_finished_button(
                 text: Text {
                     sections: vec![TextSection {
                         value: if is_last_level {
-                            "Again!".to_string()
+                            "Restart".to_string()
                         } else {
                             "Next!".to_string()
                         },
