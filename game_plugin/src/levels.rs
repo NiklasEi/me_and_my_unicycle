@@ -213,7 +213,7 @@ fn cross_finish_line(
     let body_transform = body_query.single_mut().unwrap();
 
     if body_transform.translation.x > level.finish_line() {
-        // make sure win + loose in one frame don't crash the game...
+        // make sure win + lose in one frame don't crash the game...
         state.overwrite_push(GameState::Finished).unwrap();
         sound_effects.send(PlaySoundEffect::Won);
     }

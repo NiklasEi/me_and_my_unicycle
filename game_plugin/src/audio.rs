@@ -54,8 +54,8 @@ fn play_sound_effects(
                 audio.play(audio_assets.won.clone());
             }
             PlaySoundEffect::Loose => match rand::thread_rng().gen_range(0..2) {
-                0 => audio.play(audio_assets.loose_1.clone()),
-                _ => audio.play(audio_assets.loose_2.clone()),
+                0 => audio.play(audio_assets.lose_1.clone()),
+                _ => audio.play(audio_assets.lose_2.clone()),
             },
         }
     }
